@@ -1,0 +1,3 @@
+[default]
+eth-rpc-url = "https://eth-mainnet.alchemyapi.io/v2/{YOUR_API_KEY}"
+

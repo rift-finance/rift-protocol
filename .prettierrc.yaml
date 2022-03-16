@@ -1,0 +1,6 @@
+overrides:
+  - files: "*.sol"
+    options:
+      bracketSpacing: true
+      tabWidth: 4
+      printWidth: 80
