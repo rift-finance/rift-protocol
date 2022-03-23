@@ -16,10 +16,13 @@ contract CoreTest is CoreFixture {
         assertEq(core.protocolFee(), 0);
         assertEq(core.feeTo(), feeTo);
         assertEq(core.wrappedNative(), address(weth));
+
         assertTrue(core.hasRole(C.GOVERN_ROLE, governor));
         assertTrue(core.hasRole(C.GUARDIAN_ROLE, guardian));
         assertTrue(core.hasRole(C.PAUSE_ROLE, pauser));
         assertTrue(core.hasRole(C.STRATEGIST_ROLE, strategist));
+
+        assertTrue(!core.paused());
     }
 
     function test_registerVaults() public {
@@ -157,11 +160,21 @@ contract CoreTest is CoreFixture {
         core.createRole(testRole, testRoleAdmin);
     }
 
-    function test_revokeLastGovernor() public {
+    function test_revokeLastGovernorRevert() public {
         vm.prank(governor);
 
         vm.expectRevert("LAST_GOVERNOR");
         core.revokeRole(C.GOVERN_ROLE, governor);
+    }
+
+    function test_revokeSecondLastGovernor() public {
+        vm.prank(governor);
+        core.grantRole(C.GOVERN_ROLE, user);
+
+        vm.prank(user);
+        core.revokeRole(C.GOVERN_ROLE, governor);
+
+        assertTrue(!core.hasRole(C.GOVERN_ROLE, governor));
     }
 
     function test_whitelistAll() public {
@@ -182,6 +195,19 @@ contract CoreTest is CoreFixture {
 
         core.enableWhitelist();
         assertTrue(!core.whitelistDisabled());
+    }
+
+    function test_isWhitelisted() public {
+        vm.startPrank(governor);
+
+        core.disableWhitelist();
+        assertTrue(core.isWhitelisted(user));
+
+        core.enableWhitelist();
+        assertTrue(!core.isWhitelisted(user));
+
+        core.grantRole(C.WHITELISTED_ROLE, user);
+        assertTrue(core.isWhitelisted(user));
     }
 
     function testFail_disableWhitelistFromNonGovernor() public {
