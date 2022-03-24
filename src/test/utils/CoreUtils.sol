@@ -1,29 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
-import { ProxyAdmin } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
-import { TransparentUpgradeableProxy } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { IUniswapV2Factory } from "../../../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import { IUniswapV2Router02 } from "../../../lib/v2-periphery/contracts//interfaces/IUniswapV2Router02.sol";
-import { WETH9 } from "../mocks/WETH9.sol";
 import { DSTest } from "ds-test/test.sol";
 import { Vm } from "forge-std/Vm.sol";
 
+import { ProxyAdmin } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
+import { TransparentUpgradeableProxy } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import { Core } from "../../core/Core.sol";
+import { WETH9 } from "../mocks/WETH9.sol";
 import { C } from "./Constants.sol";
 
 contract Test is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
 }
 
-contract UniswapFixture is Test {
+contract WethFixture is Test {
     // TODO: Refactor to use deployCode from forge-std
     WETH9 public weth = WETH9(C.WETH);
-    IUniswapV2Factory public factory = IUniswapV2Factory(C.uniswapFactory);
-    IUniswapV2Router02 public router = IUniswapV2Router02(C.uniswapRouter);
 }
 
-contract CoreFixture is UniswapFixture {
+contract CoreFixture is WethFixture {
     address public governor;
     address public guardian;
     address public pauser;
@@ -40,6 +37,12 @@ contract CoreFixture is UniswapFixture {
         pauser = vm.addr(3);
         strategist = vm.addr(4);
         feeTo = vm.addr(5);
+
+        vm.label(governor, "Governor");
+        vm.label(guardian, "Guardian");
+        vm.label(pauser, "Pauser");
+        vm.label(strategist, "Strategist");
+        vm.label(feeTo, "feeTo");
 
         proxyAdmin = new ProxyAdmin();
         coreImpl = new Core();
