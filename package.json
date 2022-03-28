@@ -6,15 +6,18 @@
     "src/**/*.sol"
   ],
   "devDependencies": {
+    "@typechain/ethers-v5": "^10.0.0",
     "husky": "^7.0.4",
     "prettier": "^2.3.1",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.7",
-    "solhint-plugin-prettier": "^0.0.5"
+    "solhint-plugin-prettier": "^0.0.5",
+    "typechain": "^8.0.0"
   },
   "scripts": {
     "lint": "yarn prettier && yarn solhint",
     "prettier": "prettier --write 'src/**/*.sol'",
-    "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix"
+    "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
+    "typechain": "typechain --target ethers-v5 --out-dir ./typechain ./out/**/*.json"
   }
 }
