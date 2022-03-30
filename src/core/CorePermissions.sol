@@ -6,17 +6,12 @@ import "./ICorePermissions.sol";
 
 /// @title Access control module for Core
 /// @author Recursive Research Inc
-abstract contract CorePermissions is
-    ICorePermissions,
-    AccessControlEnumerableUpgradeable
-{
+abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUpgradeable {
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     bytes32 public constant override PAUSE_ROLE = keccak256("PAUSE_ROLE");
-    bytes32 public constant override STRATEGIST_ROLE =
-        keccak256("STRATEGIST_ROLE");
-    bytes32 public constant override WHITELISTED_ROLE =
-        keccak256("WHITELISTED_ROLE");
+    bytes32 public constant override STRATEGIST_ROLE = keccak256("STRATEGIST_ROLE");
+    bytes32 public constant override WHITELISTED_ROLE = keccak256("WHITELISTED_ROLE");
 
     bool public override whitelistDisabled;
 
@@ -32,12 +27,7 @@ abstract contract CorePermissions is
         address strategist
     ) internal onlyInitializing {
         __AccessControlEnumerable_init();
-        __CorePermissions_init_unchained(
-            governor,
-            guardian,
-            pauser,
-            strategist
-        );
+        __CorePermissions_init_unchained(governor, guardian, pauser, strategist);
     }
 
     function __CorePermissions_init_unchained(
@@ -67,44 +57,24 @@ abstract contract CorePermissions is
     /// @param role the new role id
     /// @param adminRole the admin role id for `role`
     /// @dev can also be used to update admin of existing role
-    function createRole(bytes32 role, bytes32 adminRole)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-    {
+    function createRole(bytes32 role, bytes32 adminRole) external override onlyRole(GOVERN_ROLE) {
         _setRoleAdmin(role, adminRole);
     }
 
     /// @notice Batch updates the whitelist
     /// @param addresses list of addresses to whitelist
-    function whitelistAll(address[] memory addresses)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-    {
+    function whitelistAll(address[] memory addresses) external override onlyRole(GOVERN_ROLE) {
         for (uint256 i = 0; i < addresses.length; i++) {
             _grantRole(WHITELISTED_ROLE, addresses[i]);
         }
     }
 
-    function revokeRole(bytes32 role, address account)
-        public
-        override
-        onlyRole(getRoleAdmin(role))
-    {
+    function revokeRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
         _revokeRole(role, account);
-        require(
-            role != GOVERN_ROLE || getRoleMemberCount(role) >= 1,
-            "LAST_GOVERNOR"
-        );
+        require(role != GOVERN_ROLE || getRoleMemberCount(role) >= 1, "LAST_GOVERNOR");
     }
 
-    function isWhitelisted(address _address)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function isWhitelisted(address _address) public view override returns (bool) {
         return whitelistDisabled || hasRole(WHITELISTED_ROLE, _address);
     }
 

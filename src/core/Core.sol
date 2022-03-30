@@ -41,15 +41,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
         address pauser,
         address strategist
     ) public virtual initializer {
-        __Core_init(
-            _protocolFee,
-            _feeTo,
-            _wrappedNative,
-            governor,
-            guardian,
-            pauser,
-            strategist
-        );
+        __Core_init(_protocolFee, _feeTo, _wrappedNative, governor, guardian, pauser, strategist);
     }
 
     function __Core_init(
@@ -83,12 +75,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     /// @notice Registers new vault contracts with Core
     /// @param vaults list of addresses of the new vault contracts
-    function registerVaults(address[] memory vaults)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-        whenNotPaused
-    {
+    function registerVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
             require(vaults[i] != address(0), "ZERO_ADDRESS");
             // Next line returns false if the vault is already registered
@@ -100,12 +87,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     /// @notice Removes vault contracts from Core
     /// @param vaults list of addresses of the vaults to be removed
-    function removeVaults(address[] memory vaults)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-        whenNotPaused
-    {
+    function removeVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
             // Next line returns false if the vault is already registered
             if (registeredVaults.remove(vaults[i])) {
@@ -116,12 +98,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     /// @notice Sets the new protocol fee
     /// @param _protocolFee new protocol fee (out of `MAX_FEE`)
-    function setProtocolFee(uint256 _protocolFee)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-        whenNotPaused
-    {
+    function setProtocolFee(uint256 _protocolFee) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         require(_protocolFee <= MAX_FEE, "INVALID_PROTOCOL_FEE");
         protocolFee = _protocolFee;
         emit ProtocolFeeUpdated(_protocolFee);
@@ -129,12 +106,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     /// @notice Sets the new fee destination
     /// @param _feeTo new fee destination
-    function setFeeTo(address _feeTo)
-        external
-        override
-        onlyRole(GOVERN_ROLE)
-        whenNotPaused
-    {
+    function setFeeTo(address _feeTo) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         require(_feeTo != address(0), "ZERO_ADDRESS");
         feeTo = _feeTo;
         emit FeeToUpdated(_feeTo);
@@ -143,12 +115,7 @@ contract Core is ICore, CorePermissions, CoreStorage {
     // ----------- Getters for Registered Core References -----------
 
     /// @notice Returns a list of registered vault addresses
-    function getRegisteredVaults()
-        external
-        view
-        override
-        returns (address[] memory)
-    {
+    function getRegisteredVaults() external view override returns (address[] memory) {
         return registeredVaults.values();
     }
 

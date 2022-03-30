@@ -13,10 +13,7 @@ interface IMasterChefV2 {
         uint64 allocPoint;
     }
 
-    function userInfo(uint256 pid, address addr)
-        external
-        view
-        returns (UserInfo memory);
+    function userInfo(uint256 pid, address addr) external view returns (UserInfo memory);
 
     function deposit(
         uint256 pid,

@@ -1,104 +1,215 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.11;
 
+import { IERC20 } from "../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { TransparentUpgradeableProxy } from "../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { IUniswapV2Pair } from "../../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import { UniswapVaultFixture } from "./utils/VaultUtils.sol";
 
+import { UniswapVault } from "../vaults/uniswap/UniswapVault.sol";
+
+import { BasicVaultTest } from "./utils/VaultUtils.sol";
+import { TestToken } from "./mocks/TestToken.sol";
 import { C } from "./utils/Constants.sol";
-import "forge-std/console.sol";
 
-contract UniswapVaultTest is UniswapVaultFixture {
-    uint256 public amount = C.amount;
-    address public origLp;
-    IUniswapV2Pair pair;
+contract UniswapVaultTest is BasicVaultTest {
+    UniswapVault public uniswapVaultImpl;
 
-    function setUp() public override {
-        super.setUp();
+    /////////////////// DEFINE VIRTUAL FUNCTIONS ///////////////////////////
+    function createTokensAndDexPair() internal override {
+        token0 = IERC20(address(new TestToken("Test Token 0", "TT0")));
+        token1 = IERC20(address(new TestToken("Test Token 1", "TT1")));
+        pair = IUniswapV2Pair(factory.createPair(address(token0), address(token1)));
 
-        origLp = vm.addr(19);
-        pair = IUniswapV2Pair(uniswapVault.pair());
-        vm.startPrank(origLp);
+        getToken0(trader, amount);
+        getToken1(trader, amount);
 
-        token0.giveMeTokens(amount);
-        token1.giveMeTokens(amount);
+        vm.startPrank(trader);
 
         token0.approve(address(router), amount);
         token1.approve(address(router), amount);
-
-        router.addLiquidity(
-            address(token0),
-            address(token1),
-            amount,
-            amount,
-            0,
-            0,
-            address(this),
-            block.timestamp
-        );
+        router.addLiquidity(address(token0), address(token1), amount, amount, 0, 0, trader, block.timestamp);
         vm.stopPrank();
-
-        token0.giveMeTokens(amount);
-        token1.giveMeTokens(amount);
-        token0.approve(address(uniswapVault), amount);
-        token1.approve(address(uniswapVault), amount);
     }
 
-    function test_initParams() public {
-        assertEq(
-            address(pair),
-            factory.getPair(address(token0), address(token1))
+    function deployVault() internal override returns (address vault) {
+        uniswapVaultImpl = new UniswapVault();
+        vault = address(
+            new TransparentUpgradeableProxy(
+                address(uniswapVaultImpl),
+                address(proxyAdmin),
+                abi.encodeWithSignature(
+                    "initialize(address,uint256,address,address,uint256,uint256,address,address)",
+                    address(core),
+                    0,
+                    address(token0),
+                    address(token1),
+                    10_000,
+                    500,
+                    address(factory),
+                    address(router)
+                )
+            )
         );
-        assertTrue(uniswapVault.isNativeVault() == (address(token0) == C.WETH));
     }
 
-    function test_depositToken0WithValue() public {
-        vm.expectRevert("NOT_NATIVE_VAULT");
-        uniswapVault.depositToken0{ value: 1 }(0);
+    function getToken0(address user, uint256 amount) internal override {
+        TestToken(address(token0)).giveTokensTo(user, amount);
     }
 
-    function test_depositToken0() public {
-        uniswapVault.depositToken0(amount);
-        assertEq(getToken0PendingDeposit(), amount);
+    function getToken1(address user, uint256 amount) internal override {
+        TestToken(address(token1)).giveTokensTo(user, amount);
     }
 
-    function test_depositToken1() public {
-        uniswapVault.depositToken1(amount);
-        assertEq(getToken1PendingDeposit(), amount);
-    }
-
-    function test_noToken1Deposits() public {
-        uniswapVault.depositToken1(amount);
+    /////////////////// TESTS SPECIFIC TO THIS DEPLOYMENT ///////////////////////
+    function test_50PercentIncreaseInPrice() public {
+        depositToken0();
+        depositToken1();
         advance();
+
+        adjustPoolRatio((C.RAY * 150) / 100);
+        advance();
+
+        assertEq(vault.epochToToken0Rate(2), C.RAY);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 94) / 100);
     }
 
-    function getToken0PendingDeposit() public returns (uint256 pd) {
-        (, pd, ) = uniswapVault.token0Balance(address(this));
+    function test_300PercentIncreaseInPrice() public {
+        depositToken0();
+        depositToken1();
+        advance();
+
+        adjustPoolRatio(C.RAY * 3);
+        advance();
+
+        assertEq(vault.epochToToken0Rate(2), C.RAY);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 74) / 100);
     }
 
-    function getToken1PendingDeposit() public returns (uint256 pd) {
-        (, pd, ) = uniswapVault.token1Balance(address(this));
+    function test_600PercentIncreaseInPrice() public {
+        depositToken0();
+        depositToken1();
+        advance();
+
+        adjustPoolRatio(C.RAY * 6);
+        advance();
+
+        assertEq(vault.epochToToken0Rate(2), C.RAY);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 56) / 100);
     }
 
-    function advance() public {
-        (uint256 r0, uint256 r1, ) = pair.getReserves();
-        (uint256 reserves0, uint256 reserves1) = pair.token0() ==
-            address(uniswapVault.token0())
-            ? (r0, r1)
-            : (r1, r0);
-        vm.prank(strategist);
-        uniswapVault.nextEpoch(reserves0, reserves1);
+    function test_25PercentDecreaseInPrice() public {
+        depositToken0();
+        depositToken1();
+        advance();
+
+        adjustPoolRatio((C.RAY * 75) / 100);
+        advance();
+
+        assertEq(vault.epochToToken0Rate(2), C.RAY);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 94) / 100);
     }
 
-    function test_paused() public {
-        vm.startPrank(pauser);
+    function test_50PercentDecreaseInPrice() public {
+        depositToken0();
+        depositToken1();
+        advance();
 
-        core.pause();
-        assertTrue(uniswapVault.paused());
+        adjustPoolRatio((C.RAY * 50) / 100);
+        advance();
 
-        core.unpause();
-        assertTrue(!uniswapVault.paused());
+        assertEq(vault.epochToToken0Rate(2), C.RAY);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 41) / 100);
+    }
 
-        uniswapVault.pause();
-        assertTrue(uniswapVault.paused());
+    function test_95PercentDecreaseInPrice() public {
+        depositToken0();
+        depositToken1();
+        advance();
+
+        adjustPoolRatio((C.RAY * 5) / 100);
+        advance();
+
+        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 33) / 100);
+        assertEq(vault.epochToToken1Rate(2), (C.RAY * 5) / 100);
+    }
+
+    function test_thoroughBalanceCheck() public {
+        depositToken0();
+        depositToken1();
+        advance();
+
+        assertEq(getToken0UserDeposited(), amount);
+        assertEq(getToken1UserDeposited(), amount);
+        assertEq(getToken0UserPendingDeposit(), 0);
+        assertEq(getToken1UserPendingDeposit(), 0);
+        assertEq(getToken0UserClaimable(), 0);
+        assertEq(getToken1UserClaimable(), 0);
+        assertEq(getToken0UserWithdrawRequests(), 0);
+        assertEq(getToken1UserWithdrawRequests(), 0);
+
+        assertEq(getToken0Active(), amount);
+        assertEq(getToken1Active(), amount);
+        assertEq(getToken0Reserves(), 0);
+        assertEq(getToken1Reserves(), 0);
+        assertEq(getToken0DepositRequests(), 0);
+        assertEq(getToken1DepositRequests(), 0);
+        assertEq(getToken0WithdrawRequests(), 0);
+        assertEq(getToken1WithdrawRequests(), 0);
+        assertEq(getToken0Claimable(), 0);
+        assertEq(getToken1Claimable(), 0);
+
+        withdrawToken0();
+        withdrawToken1();
+
+        assertEq(getToken0UserDeposited(), amount);
+        assertEq(getToken1UserDeposited(), amount);
+        assertEq(getToken0UserPendingDeposit(), 0);
+        assertEq(getToken1UserPendingDeposit(), 0);
+        assertEq(getToken0UserClaimable(), 0);
+        assertEq(getToken1UserClaimable(), 0);
+        assertEq(getToken0UserWithdrawRequests(), amount);
+        assertEq(getToken1UserWithdrawRequests(), amount);
+
+        assertEq(getToken0Active(), amount);
+        assertEq(getToken1Active(), amount);
+        assertEq(getToken0Reserves(), 0);
+        assertEq(getToken1Reserves(), 0);
+        assertEq(getToken0DepositRequests(), 0);
+        assertEq(getToken1DepositRequests(), 0);
+        assertEq(getToken0WithdrawRequests(), amount);
+        assertEq(getToken1WithdrawRequests(), amount);
+        assertEq(getToken0Claimable(), 0);
+        assertEq(getToken1Claimable(), 0);
+
+        advance();
+
+        assertEq(getToken0UserDeposited(), 0);
+        assertEq(getToken1UserDeposited(), 0);
+        assertEq(getToken0UserPendingDeposit(), 0);
+        assertEq(getToken1UserPendingDeposit(), 0);
+        assertEq(getToken0UserClaimable(), amount);
+        assertEq(getToken1UserClaimable(), amount);
+        assertEq(getToken0UserWithdrawRequests(), 0);
+        assertEq(getToken1UserWithdrawRequests(), 0);
+
+        assertEq(getToken0Active(), 0);
+        assertEq(getToken1Active(), 0);
+        assertEq(getToken0Reserves(), 0);
+        assertEq(getToken1Reserves(), 0);
+        assertEq(getToken0DepositRequests(), 0);
+        assertEq(getToken1DepositRequests(), 0);
+        assertEq(getToken0WithdrawRequests(), 0);
+        assertEq(getToken1WithdrawRequests(), 0);
+        assertEq(getToken0Claimable(), amount);
+        assertEq(getToken1Claimable(), amount);
+
+        claimToken0();
+        claimToken1();
+
+        assertEq(getToken0UserClaimable(), 0);
+        assertEq(getToken1UserClaimable(), 0);
+
+        assertEq(getToken0Claimable(), 0);
+        assertEq(getToken1Claimable(), 0);
     }
 }

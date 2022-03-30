@@ -72,10 +72,7 @@ contract MasterChefV2Vault is UniswapVault, SushiswapVaultStorage {
     ) internal onlyInitializing {
         require(_sushi != address(0), "ZERO_ADDRESS");
         require(_masterChefV2 != address(0), "ZERO_ADDRESS");
-        require(
-            IMasterChefV2(_masterChefV2).lpToken(_pid) == address(pair),
-            "INVALID_PID"
-        );
+        require(IMasterChefV2(_masterChefV2).lpToken(_pid) == address(pair), "INVALID_PID");
         sushi = IERC20Upgradeable(_sushi);
         rewarder = _masterChefV2;
         pid = _pid;
@@ -83,15 +80,9 @@ contract MasterChefV2Vault is UniswapVault, SushiswapVaultStorage {
 
     function _unstakeLiquidity() internal virtual override {
         // withdraw from master chef v2
-        uint256 depositBalance = IMasterChefV2(rewarder)
-            .userInfo(pid, address(this))
-            .amount;
+        uint256 depositBalance = IMasterChefV2(rewarder).userInfo(pid, address(this)).amount;
         if (depositBalance > 0) {
-            IMasterChefV2(rewarder).withdrawAndHarvest(
-                pid,
-                depositBalance,
-                address(this)
-            );
+            IMasterChefV2(rewarder).withdrawAndHarvest(pid, depositBalance, address(this));
         }
 
         if (sushi != token0 && sushi != token1) {
@@ -111,14 +102,9 @@ contract MasterChefV2Vault is UniswapVault, SushiswapVaultStorage {
 
     function _stakeLiquidity() internal virtual override {
         // take our SLP tokens and deposit them into the MasterChefV2 for rewards
-        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(
-            address(this)
-        );
+        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(address(this));
         if (lpTokenBalance > 0) {
-            IERC20Upgradeable(pair).safeIncreaseAllowance(
-                rewarder,
-                lpTokenBalance
-            );
+            IERC20Upgradeable(pair).safeIncreaseAllowance(rewarder, lpTokenBalance);
             IMasterChefV2(rewarder).deposit(pid, lpTokenBalance, address(this));
         }
     }

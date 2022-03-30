@@ -24,17 +24,11 @@ abstract contract CoreReference is Initializable {
     /// @dev Emitted when the pause is lifted by `account`.
     event Unpaused(address indexed account);
 
-    function __CoreReference_init(address coreAddress)
-        internal
-        onlyInitializing
-    {
+    function __CoreReference_init(address coreAddress) internal onlyInitializing {
         __CoreReference_init_unchained(coreAddress);
     }
 
-    function __CoreReference_init_unchained(address coreAddress)
-        internal
-        onlyInitializing
-    {
+    function __CoreReference_init_unchained(address coreAddress) internal onlyInitializing {
         require(coreAddress != address(0), "ZERO_ADDRESS");
         core = ICore(coreAddress);
     }
@@ -65,10 +59,7 @@ abstract contract CoreReference is Initializable {
     }
 
     modifier onlyStrategist() {
-        require(
-            core.hasRole(core.STRATEGIST_ROLE(), msg.sender),
-            "NOT_STRATEGIST"
-        );
+        require(core.hasRole(core.STRATEGIST_ROLE(), msg.sender), "NOT_STRATEGIST");
         _;
     }
 

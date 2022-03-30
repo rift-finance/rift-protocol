@@ -13,19 +13,10 @@ contract MasterChefWithRefVault is MasterChefVault {
     /// @dev the only difference here is the additional `_ref` argument in the deposit function
     function _stakeLiquidity() internal virtual override {
         // take our SLP tokens and deposit them into the MasterChef for SUSHI rewards
-        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(
-            address(this)
-        );
+        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(address(this));
         if (lpTokenBalance > 0) {
-            IERC20Upgradeable(pair).safeIncreaseAllowance(
-                rewarder,
-                lpTokenBalance
-            );
-            IMasterChefWithRef(rewarder).deposit(
-                pid,
-                lpTokenBalance,
-                address(0)
-            );
+            IERC20Upgradeable(pair).safeIncreaseAllowance(rewarder, lpTokenBalance);
+            IMasterChefWithRef(rewarder).deposit(pid, lpTokenBalance, address(0));
         }
     }
 }

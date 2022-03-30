@@ -16,10 +16,7 @@ interface IMasterChefWithdraw {
         uint256 accSushiPerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
 
-    function userInfo(uint256 pid, address user)
-        external
-        view
-        returns (UserInfo memory);
+    function userInfo(uint256 pid, address user) external view returns (UserInfo memory);
 
     function poolInfo(uint256 pid) external view returns (PoolInfo memory);
 

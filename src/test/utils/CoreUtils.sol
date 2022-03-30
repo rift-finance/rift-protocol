@@ -11,11 +11,45 @@ import { Core } from "../../core/Core.sol";
 import { WETH9 } from "../mocks/WETH9.sol";
 import { C } from "./Constants.sol";
 
-contract Test is DSTest {
+contract RiftTest is DSTest {
     Vm public constant vm = Vm(HEVM_ADDRESS);
+
+    function toArray(address item) internal pure returns (address[] memory array) {
+        array = new address[](1);
+        array[0] = item;
+        return array;
+    }
+
+    function toArray(address item0, address item1) internal pure returns (address[] memory array) {
+        array = new address[](2);
+        array[0] = item0;
+        array[1] = item1;
+        return array;
+    }
+
+    function toArray(uint256 item0, uint256 item1) internal pure returns (uint256[] memory array) {
+        array = new uint256[](2);
+        array[0] = item0;
+        array[1] = item1;
+        return array;
+    }
+
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
+        if (y > 3) {
+            z = y;
+            uint256 x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
+        // else z = 0 (default value)
+    }
 }
 
-contract WethFixture is Test {
+contract WethFixture is RiftTest {
     // TODO: Refactor to use deployCode from forge-std
     WETH9 public weth = WETH9(C.WETH);
 }
