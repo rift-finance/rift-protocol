@@ -151,4 +151,27 @@ contract MasterChefVaultTest is BasicVaultTest {
         assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 83) / 100);
         assertEq(vault.epochToToken1Rate(2), (C.RAY * 5) / 100);
     }
+
+    function test_collectProtocolFeeAfterProfit() public {
+        vm.prank(governor);
+        core.setProtocolFee(1000);
+
+        depositToken0();
+        depositToken1();
+        advance();
+
+        simulateFees(amount, amount);
+        withdrawToken0();
+        withdrawToken1();
+
+        advance();
+
+        (uint256 token0Fees, uint256 token1Fees) = vault.feesAccrued();
+        assertTrue(token0Fees > 0);
+        assertEq(token1Fees, 0);
+
+        vault.collectFees();
+        assertEq(token0.balanceOf(feeTo), token0Fees);
+        assertEq(token1.balanceOf(feeTo), token1Fees);
+    }
 }

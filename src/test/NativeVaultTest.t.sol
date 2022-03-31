@@ -72,6 +72,29 @@ contract NativeVaultTest is BasicVaultTest {
     receive() external payable {}
 
     /////////////////// TESTS SPECIFIC TO THIS DEPLOYMENT ///////////////////////
-    // don't need any here, we're just testing that standard deposits, withdraws, and claims
+    // don't need many here, we're just testing that standard deposits, withdraws, and claims
     // (i.e. what's tested by BasicVaultTest) can work with a native vault
+
+    function test_collectProtocolFeeAfterProfit() public {
+        vm.prank(governor);
+        core.setProtocolFee(1000);
+
+        depositToken0();
+        depositToken1();
+        advance();
+
+        simulateFees(amount, amount);
+        withdrawToken0();
+        withdrawToken1();
+
+        advance();
+
+        (uint256 token0Fees, uint256 token1Fees) = vault.feesAccrued();
+        assertTrue(token0Fees > 0);
+        assertEq(token1Fees, 0);
+
+        vault.collectFees();
+        assertEq(token0.balanceOf(feeTo), token0Fees);
+        assertEq(token1.balanceOf(feeTo), token1Fees);
+    }
 }

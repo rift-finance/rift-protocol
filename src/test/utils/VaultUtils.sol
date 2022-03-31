@@ -61,7 +61,7 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vault.depositToken0(0);
     }
 
-    function test_depositToken0WithValueRevert() public {
+    function test_depositNonNativeToken0WithValueRevert() public {
         if (!vault.isNativeVault()) {
             vm.expectRevert("NOT_NATIVE_VAULT");
             vault.depositToken0{ value: 1 }(0);
@@ -228,29 +228,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
 
         vm.expectRevert("UNEXPECTED_POOL_BALANCES");
         vault.nextEpoch(reserves0, reserves1 * 2);
-    }
-
-    function test_collectProtocolFeeAfterProfit() public {
-        vm.prank(governor);
-        core.setProtocolFee(1000);
-
-        depositToken0();
-        depositToken1();
-        advance();
-
-        simulateFees(amount, amount);
-        withdrawToken0();
-        withdrawToken1();
-
-        advance();
-
-        (uint256 token0Fees, uint256 token1Fees) = vault.feesAccrued();
-        assertTrue(token0Fees > 0);
-        assertEq(token1Fees, 0);
-
-        vault.collectFees();
-        assertEq(token0.balanceOf(feeTo), token0Fees);
-        assertEq(token1.balanceOf(feeTo), token1Fees);
     }
 
     function test_canRescueTokens() public {
