@@ -5,14 +5,16 @@ import { IERC20 } from "../../lib/openzeppelin-contracts/contracts/token/ERC20/I
 import { TransparentUpgradeableProxy } from "../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { IUniswapV2Pair } from "../../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
-import { UniswapVault } from "../vaults/uniswap/UniswapVault.sol";
+import { MasterChefVault } from "../vaults/sushiswap/MasterChefVault.sol";
 
 import { BasicVaultTest } from "./utils/VaultUtils.sol";
+import { MasterChefMock } from "./mocks/MasterChefMock.sol";
 import { TestToken } from "./mocks/TestToken.sol";
 import { C } from "./utils/Constants.sol";
 
-contract UniswapVaultTest is BasicVaultTest {
-    UniswapVault public uniswapVaultImpl;
+contract MasterChefVaultTest is BasicVaultTest {
+    MasterChefMock public masterChef;
+    MasterChefVault public masterChefVaultImpl;
 
     /////////////////// DEFINE VIRTUAL FUNCTIONS ///////////////////////////
     function createTokensAndDexPair() internal override {
@@ -28,17 +30,31 @@ contract UniswapVaultTest is BasicVaultTest {
         token0.approve(address(router), amount);
         token1.approve(address(router), amount);
         router.addLiquidity(address(token0), address(token1), amount, amount, 0, 0, trader, block.timestamp);
+
         vm.stopPrank();
     }
 
     function deployVault() internal override returns (address vault) {
-        uniswapVaultImpl = new UniswapVault();
+        masterChef = new MasterChefMock();
+        factory.createPair(address(token0), address(masterChef));
+
+        vm.startPrank(trader);
+        getToken0(trader, amount);
+        masterChef.mint(trader, amount);
+        token0.approve(address(router), amount);
+        masterChef.approve(address(router), amount);
+        router.addLiquidity(address(token0), address(masterChef), amount, amount, 0, 0, trader, block.timestamp);
+        vm.stopPrank();
+
+        masterChef.addPool(0, address(pair));
+
+        masterChefVaultImpl = new MasterChefVault();
         vault = address(
             new TransparentUpgradeableProxy(
-                address(uniswapVaultImpl),
+                address(masterChefVaultImpl),
                 address(proxyAdmin),
                 abi.encodeWithSignature(
-                    "initialize(address,uint256,address,address,uint256,uint256,address,address)",
+                    "initialize(address,uint256,address,address,uint256,uint256,address,address,address,address,uint256)",
                     address(core),
                     0,
                     address(token0),
@@ -46,7 +62,10 @@ contract UniswapVaultTest is BasicVaultTest {
                     10_000,
                     500,
                     address(factory),
-                    address(router)
+                    address(router),
+                    address(masterChef),
+                    address(masterChef),
+                    0
                 )
             )
         );
@@ -69,8 +88,8 @@ contract UniswapVaultTest is BasicVaultTest {
         adjustPoolRatio((C.RAY * 150) / 100);
         advance();
 
-        assertEq(vault.epochToToken0Rate(2), C.RAY);
-        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 94) / 100);
+        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 136) / 100);
+        assertEq(vault.epochToToken1Rate(2), C.RAY);
     }
 
     function test_300PercentIncreaseInPrice() public {
@@ -82,7 +101,7 @@ contract UniswapVaultTest is BasicVaultTest {
         advance();
 
         assertEq(vault.epochToToken0Rate(2), C.RAY);
-        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 74) / 100);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 81) / 100);
     }
 
     function test_600PercentIncreaseInPrice() public {
@@ -94,7 +113,7 @@ contract UniswapVaultTest is BasicVaultTest {
         advance();
 
         assertEq(vault.epochToToken0Rate(2), C.RAY);
-        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 56) / 100);
+        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 58) / 100);
     }
 
     function test_25PercentDecreaseInPrice() public {
@@ -105,8 +124,8 @@ contract UniswapVaultTest is BasicVaultTest {
         adjustPoolRatio((C.RAY * 75) / 100);
         advance();
 
-        assertEq(vault.epochToToken0Rate(2), C.RAY);
-        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 94) / 100);
+        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 146) / 100);
+        assertEq(vault.epochToToken1Rate(2), C.RAY);
     }
 
     function test_50PercentDecreaseInPrice() public {
@@ -117,8 +136,8 @@ contract UniswapVaultTest is BasicVaultTest {
         adjustPoolRatio((C.RAY * 50) / 100);
         advance();
 
-        assertEq(vault.epochToToken0Rate(2), C.RAY);
-        assertTrue(vault.epochToToken1Rate(2) > (C.RAY * 41) / 100);
+        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 136) / 100);
+        assertEq(vault.epochToToken1Rate(2), C.RAY);
     }
 
     function test_95PercentDecreaseInPrice() public {
@@ -129,88 +148,8 @@ contract UniswapVaultTest is BasicVaultTest {
         adjustPoolRatio((C.RAY * 5) / 100);
         advance();
 
-        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 33) / 100);
+        assertTrue(vault.epochToToken0Rate(2) > (C.RAY * 83) / 100);
         assertEq(vault.epochToToken1Rate(2), (C.RAY * 5) / 100);
-    }
-
-    function test_thoroughBalanceCheck() public {
-        depositToken0();
-        depositToken1();
-        advance();
-
-        assertEq(getToken0UserDeposited(), amount);
-        assertEq(getToken1UserDeposited(), amount);
-        assertEq(getToken0UserPendingDeposit(), 0);
-        assertEq(getToken1UserPendingDeposit(), 0);
-        assertEq(getToken0UserClaimable(), 0);
-        assertEq(getToken1UserClaimable(), 0);
-        assertEq(getToken0UserWithdrawRequests(), 0);
-        assertEq(getToken1UserWithdrawRequests(), 0);
-
-        assertEq(getToken0Active(), amount);
-        assertEq(getToken1Active(), amount);
-        assertEq(getToken0Reserves(), 0);
-        assertEq(getToken1Reserves(), 0);
-        assertEq(getToken0DepositRequests(), 0);
-        assertEq(getToken1DepositRequests(), 0);
-        assertEq(getToken0WithdrawRequests(), 0);
-        assertEq(getToken1WithdrawRequests(), 0);
-        assertEq(getToken0Claimable(), 0);
-        assertEq(getToken1Claimable(), 0);
-
-        withdrawToken0();
-        withdrawToken1();
-
-        assertEq(getToken0UserDeposited(), amount);
-        assertEq(getToken1UserDeposited(), amount);
-        assertEq(getToken0UserPendingDeposit(), 0);
-        assertEq(getToken1UserPendingDeposit(), 0);
-        assertEq(getToken0UserClaimable(), 0);
-        assertEq(getToken1UserClaimable(), 0);
-        assertEq(getToken0UserWithdrawRequests(), amount);
-        assertEq(getToken1UserWithdrawRequests(), amount);
-
-        assertEq(getToken0Active(), amount);
-        assertEq(getToken1Active(), amount);
-        assertEq(getToken0Reserves(), 0);
-        assertEq(getToken1Reserves(), 0);
-        assertEq(getToken0DepositRequests(), 0);
-        assertEq(getToken1DepositRequests(), 0);
-        assertEq(getToken0WithdrawRequests(), amount);
-        assertEq(getToken1WithdrawRequests(), amount);
-        assertEq(getToken0Claimable(), 0);
-        assertEq(getToken1Claimable(), 0);
-
-        advance();
-
-        assertEq(getToken0UserDeposited(), 0);
-        assertEq(getToken1UserDeposited(), 0);
-        assertEq(getToken0UserPendingDeposit(), 0);
-        assertEq(getToken1UserPendingDeposit(), 0);
-        assertEq(getToken0UserClaimable(), amount);
-        assertEq(getToken1UserClaimable(), amount);
-        assertEq(getToken0UserWithdrawRequests(), 0);
-        assertEq(getToken1UserWithdrawRequests(), 0);
-
-        assertEq(getToken0Active(), 0);
-        assertEq(getToken1Active(), 0);
-        assertEq(getToken0Reserves(), 0);
-        assertEq(getToken1Reserves(), 0);
-        assertEq(getToken0DepositRequests(), 0);
-        assertEq(getToken1DepositRequests(), 0);
-        assertEq(getToken0WithdrawRequests(), 0);
-        assertEq(getToken1WithdrawRequests(), 0);
-        assertEq(getToken0Claimable(), amount);
-        assertEq(getToken1Claimable(), amount);
-
-        claimToken0();
-        claimToken1();
-
-        assertEq(getToken0UserClaimable(), 0);
-        assertEq(getToken1UserClaimable(), 0);
-
-        assertEq(getToken0Claimable(), 0);
-        assertEq(getToken1Claimable(), 0);
     }
 
     function test_collectProtocolFeeAfterProfit() public {

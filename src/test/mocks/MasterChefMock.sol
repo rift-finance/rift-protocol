@@ -21,16 +21,8 @@ contract MasterChefMock is ERC20("SUSHI", "Sushiswap Token") {
     mapping(uint256 => PoolInfo) public poolInfo;
 
     function addPool(uint256 _pid, address _token) public {
-        require(
-            address(poolInfo[_pid].lpToken) == address(0),
-            "already registered pid"
-        );
-        poolInfo[_pid] = PoolInfo({
-            lpToken: IERC20(_token),
-            allocPoint: 0,
-            lastRewardBlock: 0,
-            accSushiPerShare: 0
-        });
+        require(address(poolInfo[_pid].lpToken) == address(0), "already registered pid");
+        poolInfo[_pid] = PoolInfo({ lpToken: IERC20(_token), allocPoint: 0, lastRewardBlock: 0, accSushiPerShare: 0 });
     }
 
     function deposit(uint256 _pid, uint256 _amount) public {

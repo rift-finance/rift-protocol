@@ -54,6 +54,7 @@ contract CoreTest is CoreFixture {
 
         core.removeVaults(toArray(vault));
         assertTrue(!core.isRegistered(vault));
+        vm.stopPrank();
     }
 
     function testFail_removeVaultFromNonGovernor() public {
@@ -122,6 +123,8 @@ contract CoreTest is CoreFixture {
 
         vm.expectRevert("PAUSED");
         core.pause();
+
+        vm.stopPrank();
     }
 
     function test_unpause() public {
@@ -135,6 +138,8 @@ contract CoreTest is CoreFixture {
 
         core.unpause();
         assertTrue(!core.paused());
+
+        vm.stopPrank();
     }
 
     function testFail_pauseFromNonPauser() public {
@@ -195,6 +200,8 @@ contract CoreTest is CoreFixture {
 
         core.enableWhitelist();
         assertTrue(!core.whitelistDisabled());
+
+        vm.stopPrank();
     }
 
     function test_isWhitelisted() public {
@@ -208,28 +215,12 @@ contract CoreTest is CoreFixture {
 
         core.grantRole(C.WHITELISTED_ROLE, user);
         assertTrue(core.isWhitelisted(user));
+
+        vm.stopPrank();
     }
 
     function testFail_disableWhitelistFromNonGovernor() public {
-        vm.startPrank(user);
-
+        vm.prank(user);
         core.disableWhitelist();
-    }
-
-    function toArray(address item) internal pure returns (address[] memory) {
-        address[] memory array = new address[](1);
-        array[0] = item;
-        return array;
-    }
-
-    function toArray(address item0, address item1)
-        internal
-        pure
-        returns (address[] memory)
-    {
-        address[] memory array = new address[](2);
-        array[0] = item0;
-        array[1] = item1;
-        return array;
     }
 }

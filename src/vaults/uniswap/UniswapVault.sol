@@ -46,28 +46,15 @@ contract UniswapVault is Vault, UniswapVaultStorage {
         address _uniswapFactory,
         address _uniswapRouter
     ) internal onlyInitializing {
-        __Vault_init(
-            coreAddress,
-            _epochDuration,
-            _token0,
-            _token1,
-            _token0FloorNum,
-            _token1FloorNum
-        );
+        __Vault_init(coreAddress, _epochDuration, _token0, _token1, _token0FloorNum, _token1FloorNum);
         __UniswapVault_init_unchained(_uniswapFactory, _uniswapRouter);
     }
 
-    function __UniswapVault_init_unchained(
-        address _uniswapFactory,
-        address _uniswapRouter
-    ) internal onlyInitializing {
+    function __UniswapVault_init_unchained(address _uniswapFactory, address _uniswapRouter) internal onlyInitializing {
         require(_uniswapFactory != address(0), "ZERO_ADDRESS");
         require(_uniswapRouter != address(0), "ZERO_ADDRESS");
 
-        pair = IUniswapV2Factory(_uniswapFactory).getPair(
-            address(token0),
-            address(token1)
-        );
+        pair = IUniswapV2Factory(_uniswapFactory).getPair(address(token0), address(token1));
         // require that the pair has been created
         require(pair != address(0), "ZERO_ADDRESS");
 
@@ -76,19 +63,9 @@ contract UniswapVault is Vault, UniswapVaultStorage {
     }
 
     // @dev queries the pool reserves and ensure the token ordering is correct
-    function getPoolBalances()
-        internal
-        view
-        virtual
-        override
-        returns (uint256, uint256)
-    {
-        (uint256 reservesA, uint256 reservesB, ) = IUniswapV2Pair(pair)
-            .getReserves();
-        return
-            IUniswapV2Pair(pair).token0() == address(token0)
-                ? (reservesA, reservesB)
-                : (reservesB, reservesA);
+    function getPoolBalances() internal view virtual override returns (uint256, uint256) {
+        (uint256 reservesA, uint256 reservesB, ) = IUniswapV2Pair(pair).getReserves();
+        return IUniswapV2Pair(pair).token0() == address(token0) ? (reservesA, reservesB) : (reservesB, reservesA);
     }
 
     // This is provided automatically by the Uniswap router
@@ -97,21 +74,14 @@ contract UniswapVault is Vault, UniswapVaultStorage {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal view virtual override returns (uint256) {
-        return
-            IUniswapV2Router02(router).getAmountIn(
-                amountOut,
-                reserveIn,
-                reserveOut
-            );
+        return IUniswapV2Router02(router).getAmountIn(amountOut, reserveIn, reserveOut);
     }
 
     // Withdraws all liquidity
     // @dev We can ignore the need for frontrunning checks because the `_nextEpoch` function checks
     // that the pool reserves are as expected beforehand
     function _withdrawLiquidity() internal virtual override {
-        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(
-            address(this)
-        );
+        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(address(this));
         if (lpTokenBalance == 0) return;
 
         // use the router to remove liquidity from the uni pool
@@ -144,30 +114,23 @@ contract UniswapVault is Vault, UniswapVaultStorage {
         token0.safeIncreaseAllowance(router, availableToken0);
         token1.safeIncreaseAllowance(router, availableToken1);
         // can safely ignore `liquidity` return value because when withdrawing we check our full balance
-        (token0Deposited, token1Deposited, ) = IUniswapV2Router02(router)
-            .addLiquidity(
-                address(token0),
-                address(token1),
-                availableToken0,
-                availableToken1,
-                0,
-                0,
-                address(this),
-                block.timestamp
-            );
+        (token0Deposited, token1Deposited, ) = IUniswapV2Router02(router).addLiquidity(
+            address(token0),
+            address(token1),
+            availableToken0,
+            availableToken1,
+            0,
+            0,
+            address(this),
+            block.timestamp
+        );
 
         // if we didn't deposit the full `availableToken{x}`, reduce allowance for safety
         if (availableToken0 > token0Deposited) {
-            token0.safeDecreaseAllowance(
-                router,
-                availableToken0 - token0Deposited
-            );
+            token0.safeDecreaseAllowance(router, availableToken0 - token0Deposited);
         }
         if (availableToken1 > token1Deposited) {
-            token1.safeDecreaseAllowance(
-                router,
-                availableToken1 - token1Deposited
-            );
+            token1.safeDecreaseAllowance(router, availableToken1 - token1Deposited);
         }
     }
 
@@ -184,12 +147,7 @@ contract UniswapVault is Vault, UniswapVaultStorage {
         IERC20Upgradeable tokenIn,
         IERC20Upgradeable tokenOut,
         uint256 amountIn
-    )
-        internal
-        virtual
-        override
-        returns (uint256 amountOut, uint256 amountConsumed)
-    {
+    ) internal virtual override returns (uint256 amountOut, uint256 amountConsumed) {
         if (amountIn == 0) return (0, 0);
 
         tokenIn.safeIncreaseAllowance(router, amountIn);
@@ -204,11 +162,7 @@ contract UniswapVault is Vault, UniswapVaultStorage {
     }
 
     /// @notice converts two addresses into an address[] type
-    function getPath(address _from, address _to)
-        internal
-        pure
-        returns (address[] memory path)
-    {
+    function getPath(address _from, address _to) internal pure returns (address[] memory path) {
         path = new address[](2);
         path[0] = _from;
         path[1] = _to;

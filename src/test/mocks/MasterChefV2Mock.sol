@@ -14,7 +14,7 @@ contract MasterChefV2Mock is ERC20("SUSHI", "Sushiswap Token") {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     mapping(uint256 => address) public lpToken;
     mapping(uint256 => TestToken) public rewardToken;
-    mapping(uint256 => mapping(address => uint256)) accumulatedRewards;
+    mapping(uint256 => mapping(address => uint256)) public accumulatedRewards;
 
     function addPool(
         uint256 _pid,
@@ -24,14 +24,6 @@ contract MasterChefV2Mock is ERC20("SUSHI", "Sushiswap Token") {
         require(lpToken[_pid] == address(0), "already registered pid");
         lpToken[_pid] = _token;
         rewardToken[_pid] = TestToken(_rewardToken);
-    }
-
-    function giveRewards(
-        uint256 _pid,
-        address user,
-        uint256 amount
-    ) public {
-        accumulatedRewards[_pid][user] += amount;
     }
 
     function deposit(
@@ -52,10 +44,7 @@ contract MasterChefV2Mock is ERC20("SUSHI", "Sushiswap Token") {
         IERC20 _lpToken = IERC20(lpToken[_pid]);
         userInfo[_pid][msg.sender].amount -= _amount;
         mint(msg.sender, _amount);
-        rewardToken[_pid].giveTokensTo(
-            msg.sender,
-            accumulatedRewards[_pid][msg.sender]
-        );
+        rewardToken[_pid].giveTokensTo(msg.sender, _amount);
         _lpToken.transfer(_to, _amount);
     }
 

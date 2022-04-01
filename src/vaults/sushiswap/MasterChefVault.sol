@@ -72,11 +72,7 @@ contract MasterChefVault is UniswapVault, SushiswapVaultStorage {
     ) internal onlyInitializing {
         require(_sushi != address(0), "ZERO_ADDRESS");
         require(_masterChef != address(0), "ZERO_ADDRESS");
-        require(
-            address(IMasterChef(_masterChef).poolInfo(_pid).lpToken) ==
-                address(pair),
-            "INVALID_PID"
-        );
+        require(address(IMasterChef(_masterChef).poolInfo(_pid).lpToken) == address(pair), "INVALID_PID");
         sushi = IERC20Upgradeable(_sushi);
         rewarder = _masterChef;
         pid = _pid;
@@ -84,9 +80,7 @@ contract MasterChefVault is UniswapVault, SushiswapVaultStorage {
 
     function _unstakeLiquidity() internal virtual override {
         // check our SLP balance in the MasterChef and withdraw
-        uint256 depositBalance = IMasterChef(rewarder)
-            .userInfo(pid, address(this))
-            .amount;
+        uint256 depositBalance = IMasterChef(rewarder).userInfo(pid, address(this)).amount;
         if (depositBalance > 0) {
             IMasterChef(rewarder).withdraw(pid, depositBalance);
         }
@@ -109,14 +103,9 @@ contract MasterChefVault is UniswapVault, SushiswapVaultStorage {
 
     function _stakeLiquidity() internal virtual override {
         // take our SLP tokens and deposit them into the MasterChef for SUSHI rewards
-        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(
-            address(this)
-        );
+        uint256 lpTokenBalance = IERC20Upgradeable(pair).balanceOf(address(this));
         if (lpTokenBalance > 0) {
-            IERC20Upgradeable(pair).safeIncreaseAllowance(
-                rewarder,
-                lpTokenBalance
-            );
+            IERC20Upgradeable(pair).safeIncreaseAllowance(rewarder, lpTokenBalance);
             IMasterChef(rewarder).deposit(pid, lpTokenBalance);
         }
     }
