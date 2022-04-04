@@ -2,6 +2,8 @@
 
 See the [Rift Documentation](https://docs.rift.finance/protocol-overview/smart-contract-overview) for more information.
 
+** THERE IS CURRENTLY NO RIFT TOKEN **
+
 ## Getting Started
 
 1. Install [foundry](https://github.com/gakonst/foundry#installation)

@@ -5,6 +5,7 @@ help:
 
 .PHONY: test
 test: build ## run tests
+	forge test --match-contract RiftTokenTest
 	forge test --match-contract CoreTest
 	forge test --match-contract UniswapVaultTest
 	forge test --match-contract MasterChefVaultTest
