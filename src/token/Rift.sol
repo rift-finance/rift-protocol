@@ -5,7 +5,6 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/exten
 
 contract Rift is ERC20BurnableUpgradeable {
     address public owner;
-    address public pendingOwner;
     mapping(address => bool) public isBurner;
     mapping(address => bool) public isMinter;
 
