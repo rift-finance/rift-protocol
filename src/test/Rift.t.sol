@@ -46,7 +46,7 @@ contract RiftTokenTest is RiftTest {
         rift.addMinter(address(this));
 
         vm.expectRevert("ONLY_OWNER");
-        rift.addMinter(address(this));
+        rift.revokeMinter(address(this));
     }
 
     function testCannotRevokeBurnerWithoutPermission() public {
@@ -54,7 +54,7 @@ contract RiftTokenTest is RiftTest {
         rift.addMinter(address(this));
 
         vm.expectRevert("ONLY_OWNER");
-        rift.addBurner(address(this));
+        rift.revokeBurner(address(this));
     }
 
     function test_ownerCanAddMinter() public {
