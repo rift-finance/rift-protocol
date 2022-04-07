@@ -91,7 +91,7 @@ The Uniswap Vault inherits the Vault parent contract, and simply defines these 5
 
 #### MasterChef Vault
 
-The MasterChef Vault inherits from the Uniswap Vault and is used for token pairs that receive rewards from Sushi's MasterChef contract. Upon depositing liquidity into the DEX, it takes the received LP Tokens and stakes them in the MasterChef contract to receive `SUSHI` staking rewards. Before withdrawing liqudity, it unstakes its tokens from the MasterChef, harvests Sushi rewards, then removes its liquidity from the DEX pool.
+The MasterChef Vault inherits from the Uniswap Vault and is used for token pairs that receive rewards from Sushi's MasterChef contract. Upon depositing liquidity into the DEX, it takes the received LP Tokens and stakes them in the MasterChef contract to receive `SUSHI` staking rewards. Before withdrawing liquidity, it unstakes its tokens from the MasterChef, harvests Sushi rewards, then removes its liquidity from the DEX pool.
 
 #### MasterChefV2 Vault
 
