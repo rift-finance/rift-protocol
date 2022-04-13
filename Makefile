@@ -27,5 +27,5 @@ build: clean ## build contracts
 	forge build
 
 .PHONY: test
-test: build ## run tests
+test: ## run tests
 	forge test
