@@ -11,6 +11,10 @@ See the [Rift Documentation](https://docs.rift.finance/protocol-overview/smart-c
 3. Compile contracts with `make build`
 4. Run tests with `make test`
 
+## Contributing
+
+If you want to contribute, but aren't sure where to start, you can create a [new discussion](https://github.com/recursive-research/rift-protocol/discussions) or reach out on [discord](https://discord.com/invite/ZdjhA4Zh5e).
+
 ## Contract Structure
 
 ### Core
