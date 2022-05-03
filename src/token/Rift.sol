@@ -33,8 +33,6 @@ contract Rift is
         __AccessControl_init();
         __ERC20Permit_init("Rift Token");
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
-
-        // do we want to init MINTER_ROLE and BURNER_ROLE?
     }
 
     modifier onlyOwner() {
@@ -54,8 +52,10 @@ contract Rift is
         emit OwnershipTransferInitiated(owner, pendingOwner);
     }
 
+    /// @dev Accept transfer of ownership of the contract.
+    /// Can only be called by the pendingOwner.
     function acceptOwnership() external {
-        require(msg.sender == pendingOwner, "NOT_PENDING_OWNER");
+        require(msg.sender == pendingOwner, "ONLY_PENDING_OWNER");
         address oldOwner = owner;
         owner = pendingOwner;
 
@@ -68,10 +68,14 @@ contract Rift is
     // ----------- Mint / Burn -----------
     // note: users can burn their tokens
 
+    /// @dev Mint tokens.
+    /// Can only be called by MINTER_ROLE.
     function mint(address account, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(account, amount);
     }
 
+    /// @dev Burn tokens from a given account.
+    /// Can only be called by BURNER_ROLE.
     function burnFrom(address account, uint256 amount) public override onlyRole(BURNER_ROLE) {
         super.burnFrom(account, amount);
     }

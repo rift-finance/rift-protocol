@@ -5,7 +5,7 @@ import { TransparentUpgradeableProxy } from "../../lib/openzeppelin-contracts/co
 import { ProxyAdmin } from "../../lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import { RiftTest } from "./utils/CoreUtils.sol";
 import { Rift } from "../token/Rift.sol";
-// import { IRift } from "../token/IRift.sol";
+import { IRift } from "../token/IRift.sol";
 
 import { StringsUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/StringsUpgradeable.sol";
 
@@ -14,7 +14,7 @@ contract RiftTokenTest is RiftTest {
 
     ProxyAdmin public proxyAdmin;
     Rift public riftImpl;
-    Rift public rift;
+    IRift public rift;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
@@ -23,7 +23,7 @@ contract RiftTokenTest is RiftTest {
     function setUp() public {
         proxyAdmin = new ProxyAdmin();
         riftImpl = new Rift();
-        rift = Rift(
+        rift = IRift(
             address(
                 new TransparentUpgradeableProxy(
                     address(riftImpl),
@@ -42,6 +42,51 @@ contract RiftTokenTest is RiftTest {
         assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, address(this)));
         assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
     }
+
+    function test_transferOwnership() public {
+        address newOwner = vm.addr(2);
+        vm.prank(owner);
+        rift.transferOwnership(newOwner);
+
+        // newOwner has not accepted ownership yet
+        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
+        // prev owner is still DEFAULT_ADMIN_ROLE
+        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
+
+        assertEq(owner, rift.owner());
+        assertEq(newOwner, rift.pendingOwner());
+    }
+
+    function test_acceptOwership() public {
+        address newOwner = vm.addr(2);
+        vm.prank(owner);
+        rift.transferOwnership(newOwner);
+        vm.prank(newOwner);
+        rift.acceptOwnership();
+
+        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
+        assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
+
+        assertEq(newOwner, rift.owner());
+        assertTrue(owner != rift.owner());
+    }
+
+    function test_strangerCannotTransferOwnership() public {
+        address newOwner = vm.addr(2);
+        vm.expectRevert("ONLY_OWNER");
+        rift.transferOwnership(newOwner);
+    }
+
+    function test_StrangerCannotAcceptOwnership() public {
+        address newOwner = vm.addr(2);
+        vm.prank(owner);
+        rift.transferOwnership(newOwner);
+
+        vm.expectRevert("ONLY_PENDING_OWNER");
+        rift.acceptOwnership();
+    }
+
+    // ------------ owner is DEAFAULT_ADMIN --------------
 
     function test_ownerCanAddMinter() public {
         vm.prank(owner);
@@ -75,17 +120,7 @@ contract RiftTokenTest is RiftTest {
         assertTrue(!rift.hasRole(BURNER_ROLE, address(this)));
     }
 
-    function test_cannotRevokeNonMinter() public {
-        vm.prank(owner);
-        vm.expectRevert("AccessControl: can only renounce roles for self");
-        rift.renounceRole(MINTER_ROLE, address(this));
-    }
-
-    function test_cannotRevokeNonBurner() public {
-        vm.prank(owner);
-        vm.expectRevert("AccessControl: can only renounce roles for self");
-        rift.renounceRole(BURNER_ROLE, address(this));
-    }
+    // ------------ BURN / MINT --------------
 
     function test_cannotMintWithoutPermissions() public {
         vm.expectRevert(_accessErrorString(MINTER_ROLE, address(this)));
@@ -118,7 +153,7 @@ contract RiftTokenTest is RiftTest {
         assertEq(rift.balanceOf(address(this)), 0);
     }
 
-    // utils
+    // ------------ UTILS --------------
     function _accessErrorString(bytes32 role, address account) internal pure returns (bytes memory) {
         return
             bytes(
