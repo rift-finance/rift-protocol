@@ -1,29 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { TransparentUpgradeableProxy } from "../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { ProxyAdmin } from "../../lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import { RiftTest } from "./utils/CoreUtils.sol";
 import { Rift } from "../token/Rift.sol";
-import { IRift } from "../token/IRift.sol";
-
-import { StringsUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/StringsUpgradeable.sol";
 
 contract RiftTokenTest is RiftTest {
     address public owner = vm.addr(1);
 
     ProxyAdmin public proxyAdmin;
     Rift public riftImpl;
-    IRift public rift;
-
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    Rift public rift;
 
     function setUp() public {
         proxyAdmin = new ProxyAdmin();
         riftImpl = new Rift();
-        rift = IRift(
+        rift = Rift(
             address(
                 new TransparentUpgradeableProxy(
                     address(riftImpl),
@@ -36,105 +29,109 @@ contract RiftTokenTest is RiftTest {
 
     function test_initialParams() public {
         assertEq(owner, rift.owner());
-        assertEq(MINTER_ROLE, rift.MINTER_ROLE());
-        assertEq(BURNER_ROLE, rift.BURNER_ROLE());
-        assertEq(DEFAULT_ADMIN_ROLE, rift.DEFAULT_ADMIN_ROLE());
-        assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, address(this)));
-        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
     }
 
-    function test_transferOwnership() public {
-        address newOwner = vm.addr(2);
-        vm.prank(owner);
-        rift.transferOwnership(newOwner);
-
-        // newOwner has not accepted ownership yet
-        assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
-        // owner is still DEFAULT_ADMIN_ROLE
-        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
-
-        assertEq(owner, rift.owner());
-        assertEq(newOwner, rift.pendingOwner());
-    }
-
-    function test_acceptOwership() public {
-        address newOwner = vm.addr(2);
-        vm.prank(owner);
-        rift.transferOwnership(newOwner);
-        vm.prank(newOwner);
-        rift.acceptOwnership();
-
-        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
-        assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
-
-        assertEq(newOwner, rift.owner());
-        assertTrue(owner != rift.owner());
-    }
-
-    function test_strangerCannotTransferOwnership() public {
-        address newOwner = vm.addr(2);
+    function testCannotAddMinterWithoutPermission() public {
         vm.expectRevert("ONLY_OWNER");
-        rift.transferOwnership(newOwner);
+        rift.addMinter(address(this));
     }
 
-    function test_StrangerCannotAcceptOwnership() public {
-        address newOwner = vm.addr(2);
+    function testCannotAddBurnerWithoutPermission() public {
+        vm.expectRevert("ONLY_OWNER");
+        rift.addBurner(address(this));
+    }
+
+    function testCannotRevokeMinterWithoutPermission() public {
         vm.prank(owner);
-        rift.transferOwnership(newOwner);
+        rift.addMinter(address(this));
 
-        vm.expectRevert("ONLY_PENDING_OWNER");
-        rift.acceptOwnership();
+        vm.expectRevert("ONLY_OWNER");
+        rift.revokeMinter(address(this));
     }
 
-    // ------------ owner is DEAFAULT_ADMIN --------------
+    function testCannotRevokeBurnerWithoutPermission() public {
+        vm.prank(owner);
+        rift.addMinter(address(this));
+
+        vm.expectRevert("ONLY_OWNER");
+        rift.revokeBurner(address(this));
+    }
 
     function test_ownerCanAddMinter() public {
         vm.prank(owner);
-        rift.grantRole(MINTER_ROLE, address(this));
+        rift.addMinter(address(this));
 
-        assertTrue(rift.hasRole(MINTER_ROLE, address(this)));
+        assertTrue(rift.isMinter(address(this)));
     }
 
     function test_ownerCanAddBurner() public {
         vm.prank(owner);
-        rift.grantRole(BURNER_ROLE, address(this));
+        rift.addBurner(address(this));
 
-        assertTrue(rift.hasRole(BURNER_ROLE, address(this)));
+        assertTrue(rift.isBurner(address(this)));
     }
 
     function test_ownerCanRevokeMinter() public {
         vm.prank(owner);
-        rift.grantRole(MINTER_ROLE, address(this));
+        rift.addMinter(address(this));
 
         vm.prank(owner);
-        rift.revokeRole(MINTER_ROLE, address(this));
-        assertTrue(!rift.hasRole(MINTER_ROLE, address(this)));
+        rift.revokeMinter(address(this));
+        assertTrue(!rift.isMinter(address(this)));
     }
 
     function test_ownerCanRevokeBurner() public {
         vm.prank(owner);
-        rift.grantRole(BURNER_ROLE, address(this));
+        rift.addBurner(address(this));
 
         vm.prank(owner);
-        rift.revokeRole(BURNER_ROLE, address(this));
-        assertTrue(!rift.hasRole(BURNER_ROLE, address(this)));
+        rift.revokeBurner(address(this));
+        assertTrue(!rift.isBurner(address(this)));
     }
 
-    // ------------ BURN / MINT --------------
+    function test_cannotAddAlreadyMinter() public {
+        vm.startPrank(owner);
+        rift.addMinter(address(this));
+
+        vm.expectRevert("ALREADY_MINTER");
+        rift.addMinter(address(this));
+        vm.stopPrank();
+    }
+
+    function test_cannotAddAlreadyBurner() public {
+        vm.startPrank(owner);
+        rift.addBurner(address(this));
+
+        vm.expectRevert("ALREADY_BURNER");
+        rift.addBurner(address(this));
+        vm.stopPrank();
+    }
+
+    function test_cannotRevokeNonMinter() public {
+        vm.prank(owner);
+        vm.expectRevert("NOT_MINTER");
+        rift.revokeMinter(address(this));
+    }
+
+    function test_cannotRevokeNonBurner() public {
+        vm.prank(owner);
+        vm.expectRevert("NOT_BURNER");
+        rift.revokeBurner(address(this));
+    }
 
     function test_cannotMintWithoutPermissions() public {
-        vm.expectRevert(_accessErrorString(MINTER_ROLE, address(this)));
+        vm.expectRevert("ONLY_MINTER");
         rift.mint(address(this), 100);
     }
 
     function test_cannotBurnWithoutPermissions() public {
-        vm.expectRevert(_accessErrorString(BURNER_ROLE, address(this)));
+        vm.expectRevert("ONLY_BURNER");
         rift.burnFrom(address(this), 100);
     }
 
     function test_canMintAsMinter() public {
         vm.prank(owner);
-        rift.grantRole(MINTER_ROLE, address(this));
+        rift.addMinter(address(this));
 
         rift.mint(address(this), 100);
         assertEq(rift.balanceOf(address(this)), 100);
@@ -142,39 +139,14 @@ contract RiftTokenTest is RiftTest {
 
     function test_canBurnAsBurner() public {
         vm.prank(owner);
-        rift.grantRole(MINTER_ROLE, address(this));
+        rift.addMinter(address(this));
         rift.mint(address(this), 100);
         rift.increaseAllowance(address(this), 100);
 
         vm.prank(owner);
-        rift.grantRole(BURNER_ROLE, address(this));
+        rift.addBurner(address(this));
         rift.burnFrom(address(this), 100);
 
         assertEq(rift.balanceOf(address(this)), 0);
-    }
-
-    function test_cannotBurnWithoutAllowance() public {
-        vm.prank(owner);
-        rift.grantRole(MINTER_ROLE, address(this));
-        rift.mint(address(this), 100);
-
-        vm.prank(owner);
-        rift.grantRole(BURNER_ROLE, address(this));
-
-        vm.expectRevert("ERC20: insufficient allowance");
-        rift.burnFrom(address(this), 100);
-    }
-
-    // ------------ UTILS --------------
-    function _accessErrorString(bytes32 role, address account) internal pure returns (bytes memory) {
-        return
-            bytes(
-                abi.encodePacked(
-                    "AccessControl: account ",
-                    StringsUpgradeable.toHexString(uint160(account), 20),
-                    " is missing role ",
-                    StringsUpgradeable.toHexString(uint256(role), 32)
-                )
-            );
     }
 }
