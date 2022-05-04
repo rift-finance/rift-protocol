@@ -49,8 +49,8 @@ contract RiftTokenTest is RiftTest {
         rift.transferOwnership(newOwner);
 
         // newOwner has not accepted ownership yet
-        assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
-        // prev owner is still DEFAULT_ADMIN_ROLE
+        assertTrue(!rift.hasRole(DEFAULT_ADMIN_ROLE, newOwner));
+        // owner is still DEFAULT_ADMIN_ROLE
         assertTrue(rift.hasRole(DEFAULT_ADMIN_ROLE, owner));
 
         assertEq(owner, rift.owner());
@@ -151,6 +151,18 @@ contract RiftTokenTest is RiftTest {
         rift.burnFrom(address(this), 100);
 
         assertEq(rift.balanceOf(address(this)), 0);
+    }
+
+    function test_cannotBurnWithoutAllowance() public {
+        vm.prank(owner);
+        rift.grantRole(MINTER_ROLE, address(this));
+        rift.mint(address(this), 100);
+
+        vm.prank(owner);
+        rift.grantRole(BURNER_ROLE, address(this));
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        rift.burnFrom(address(this), 100);
     }
 
     // ------------ UTILS --------------

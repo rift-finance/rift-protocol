@@ -6,7 +6,15 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/IAccessCon
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/governance/utils/IVotesUpgradeable.sol";
 
-interface IRift is IERC20Upgradeable, IERC20PermitUpgradeable, IAccessControlUpgradeable, IVotesUpgradeable {
+import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+
+interface IRift is
+    IERC20Upgradeable,
+    IERC20PermitUpgradeable,
+    IAccessControlUpgradeable,
+    IVotesUpgradeable,
+    IERC20MetadataUpgradeable
+{
     // roles
     function MINTER_ROLE() external view returns (bytes32);
 
@@ -33,8 +41,6 @@ interface IRift is IERC20Upgradeable, IERC20PermitUpgradeable, IAccessControlUpg
     function burnFrom(address account, uint256 amount) external;
 
     // erc20
-
-    function balanceOf(address account) external view returns (uint256);
 
     function increaseAllowance(address account, uint256 amount) external returns (uint256);
 }

@@ -3,17 +3,9 @@ pragma solidity ^0.8.11;
 
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-contract Rift is
-    Initializable,
-    ERC20Upgradeable,
-    ERC20BurnableUpgradeable,
-    AccessControlUpgradeable,
-    ERC20PermitUpgradeable,
-    ERC20VotesUpgradeable
-{
+contract Rift is ERC20BurnableUpgradeable, AccessControlUpgradeable, ERC20VotesUpgradeable {
     address public owner;
     address public pendingOwner;
 
@@ -47,8 +39,6 @@ contract Rift is
     /// Can only be called by the current owner.
     function transferOwnership(address _pendingOwner) external onlyOwner {
         pendingOwner = _pendingOwner;
-        // important to grant admin role to pendingOwner here
-        _grantRole(DEFAULT_ADMIN_ROLE, pendingOwner);
         emit OwnershipTransferInitiated(owner, pendingOwner);
     }
 
@@ -61,6 +51,7 @@ contract Rift is
 
         // revoke the DEFAULT ADMIN ROLE from prev owner
         _revokeRole(DEFAULT_ADMIN_ROLE, oldOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, owner);
 
         emit OwnershipTransferred(oldOwner, owner);
     }
@@ -75,12 +66,15 @@ contract Rift is
     }
 
     /// @dev Burn tokens from a given account.
-    /// Can only be called by BURNER_ROLE.
+    /// Can only be called by BURNER_ROLE and requires allowance from account
     function burnFrom(address account, uint256 amount) public override onlyRole(BURNER_ROLE) {
         super.burnFrom(account, amount);
     }
 
     // ----------- The following functions are overrides required by Solidity. -----------
+    // this ensures we use the ERC20VotesUpgradeable overrides in order to track voting power and checkpoints
+    // reason this is required is because we are inheriting from both ERC20BurnableUpgradeable and ERC20VotesUpgradeable
+    // which both inherit from ERC20Upgradeable
 
     function _afterTokenTransfer(
         address from,

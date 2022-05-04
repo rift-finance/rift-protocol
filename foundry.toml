@@ -1,4 +1,4 @@
 [default]
-eth-rpc-url = "https://eth-mainnet.alchemyapi.io/v2/Rq1gA3iogofW4UPaAQP3Z8XyVKzhUz0W"
+eth-rpc-url = "https://eth-mainnet.alchemyapi.io/v2/{YOUR_API_KEY}"
 fork-block-number = 13000000
 
