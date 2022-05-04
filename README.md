@@ -8,6 +8,7 @@ See the [Rift Documentation](https://docs.rift.finance/protocol-overview/smart-c
 
 1. Install [foundry](https://github.com/gakonst/foundry#installation)
 2. Bootstrap with `ALCHEMY_API_KEY=<your api key> make bootstrap`
+  (alternately you can add ALCHEMY_API_KEY to a `.env` file and run `make bootstrap`)
 3. Compile contracts with `make build`
 4. Run tests with `make test`
 

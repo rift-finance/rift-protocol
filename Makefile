@@ -1,3 +1,5 @@
+-include .env
+
 .PHONY:	help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -11,7 +13,7 @@ check-%:
 
 .PHONY: bootstrap
 bootstrap: check-ALCHEMY_API_KEY install ## bootstrap project
-	@sed 's/{YOUR_API_KEY}/${ALCHEMY_API_KEY}/g' foundry.template.toml > foundry.toml
+	@sed 's/{ALCHEMY_API_KEY}/${ALCHEMY_API_KEY}/g' foundry.template.toml > foundry.toml
 
 .PHONY: install
 install: ## install dependencies
