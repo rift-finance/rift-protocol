@@ -9,9 +9,9 @@ import "../../lib/openzeppelin-contracts-upgradeable/contracts/governance/utils/
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
 interface IRift is
+    IAccessControlUpgradeable,
     IERC20Upgradeable,
     IERC20PermitUpgradeable,
-    IAccessControlUpgradeable,
     IVotesUpgradeable,
     IERC20MetadataUpgradeable
 {
@@ -38,9 +38,7 @@ interface IRift is
 
     function mint(address account, uint256 amount) external;
 
-    function burnFrom(address account, uint256 amount) external;
-
-    // erc20
+    // erc20 extensions
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
 
