@@ -3,6 +3,8 @@
 /node_modules
 /typechain
 
+.vscode
+
 foundry.toml
 
 *.env
