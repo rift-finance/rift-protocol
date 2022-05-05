@@ -168,7 +168,7 @@ contract CoreTest is CoreFixture {
     function test_revokeLastGovernorRevert() public {
         vm.prank(governor);
 
-        vm.expectRevert("LAST_GOVERNOR");
+        vm.expectRevert("NO_SELFREVOKE");
         core.revokeRole(C.GOVERN_ROLE, governor);
     }
 
