@@ -21,9 +21,10 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     bytes32 public constant TOKEN0 = keccak256("TOKEN0");
     bytes32 public constant TOKEN1 = keccak256("TOKEN1");
 
-    uint256 public constant RAY = 10**27;
+    uint256 public constant RAY = 1e27;
     uint256 public constant POOL_ERR = 50; // 0.5% error margin allowed
     uint256 public constant DENOM = 10_000;
+    uint256 public constant MIN_LP = 1000; // minimum amount of tokens to be deposited as LP
 
     // ----------- Upgradeable Constructor Pattern -----------
 
@@ -57,8 +58,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 _token0FloorNum,
         uint256 _token1FloorNum
     ) internal onlyInitializing {
-        require(_token0 != address(0), "ZERO_ADDRESS");
-        require(_token1 != address(0), "ZERO_ADDRESS");
         require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
         require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
 
@@ -207,9 +206,10 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         }
 
         // Add it to their withdraw request and log the epoch
-        assetData.withdrawRequests[msg.sender].amount = _withdrawAmountDay0 + req.amount;
+        Request storage userWithdrawRequest = assetData.withdrawRequests[msg.sender];
+        userWithdrawRequest.amount = _withdrawAmountDay0 + req.amount;
         if (req.epoch < currEpoch) {
-            assetData.withdrawRequests[msg.sender].epoch = currEpoch;
+            userWithdrawRequest.epoch = currEpoch;
         }
 
         // track total withdraw requests
@@ -429,22 +429,16 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             if (token0Deficit > _token0.poolBalance) {
                 token1NeededToSwap = _token1.available;
             } else {
-                token1NeededToSwap = calcAmountIn(
-                    token0Floor - _token0.available,
-                    _token1.poolBalance,
-                    _token0.poolBalance
-                );
+                token1NeededToSwap = calcAmountIn(token0Deficit, _token1.poolBalance, _token0.poolBalance);
             }
 
             // swap as much token1 as is necessary to get back to the token0 floor, without going
             // under the token1 floor
             uint256 swapAmount = (token1Ceiling + token1NeededToSwap < _token1.available)
                 ? _token1.available - token1Ceiling
-                : (
-                    token1NeededToSwap + token1Floor > _token1.available
-                        ? _token1.available - token1Floor
-                        : token1NeededToSwap
-                );
+                : token1NeededToSwap + token1Floor > _token1.available
+                ? _token1.available - token1Floor
+                : token1NeededToSwap;
 
             (uint256 amountOut, uint256 amountConsumed) = swap(token1, token0, swapAmount);
             _token0.available += amountOut;
@@ -464,11 +458,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             if (token1Deficit > _token1.poolBalance) {
                 token0NeededToSwap = _token0.poolBalance;
             } else {
-                token0NeededToSwap = calcAmountIn(
-                    token1Ceiling - _token1.available,
-                    _token0.poolBalance,
-                    _token1.poolBalance
-                );
+                token0NeededToSwap = calcAmountIn(token1Deficit, _token0.poolBalance, _token1.poolBalance);
             }
 
             if (token0Floor + token0NeededToSwap < _token0.available) {
@@ -571,8 +561,8 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         internal
         returns (uint256 token0Deposited, uint256 token1Deposited)
     {
-        // ensure sufficient liquidity is minted, if < 1 gwei don't activate those funds
-        if ((availableToken0 < (1 gwei)) || (availableToken1 < (1 gwei))) return (0, 0);
+        // ensure sufficient liquidity is minted, if < MIN_LP don't activate those funds
+        if ((availableToken0 < MIN_LP) || (availableToken1 < MIN_LP)) return (0, 0);
         (token0Deposited, token1Deposited) = _depositLiquidity(availableToken0, availableToken1);
         _stakeLiquidity();
     }
