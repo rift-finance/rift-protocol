@@ -85,14 +85,14 @@ abstract contract CorePermissions is ICorePermissions, AccessControlUpgradeable 
     function disableWhitelist() external override onlyRole(GOVERN_ROLE) {
         if (!whitelistDisabled) {
             whitelistDisabled = true;
-            emit WhitelistDisabled(msg.sender);
+            emit WhitelistDisabled();
         }
     }
 
     function enableWhitelist() external override onlyRole(GOVERN_ROLE) {
         if (whitelistDisabled) {
             whitelistDisabled = false;
-            emit WhitelistEnabled(msg.sender);
+            emit WhitelistEnabled();
         }
     }
 }
