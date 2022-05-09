@@ -36,11 +36,6 @@ abstract contract CorePermissions is ICorePermissions, AccessControlUpgradeable 
         address pauser,
         address strategist
     ) internal onlyInitializing {
-        require(guardian != address(0), "ZERO_ADDRESS");
-        require(governor != address(0), "ZERO_ADDRESS");
-        require(pauser != address(0), "ZERO_ADDRESS");
-        require(strategist != address(0), "ZERO_ADDRESS");
-
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PAUSE_ROLE, GOVERN_ROLE);
