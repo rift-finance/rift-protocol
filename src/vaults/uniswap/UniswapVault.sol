@@ -51,9 +51,6 @@ contract UniswapVault is Vault, UniswapVaultStorage {
     }
 
     function __UniswapVault_init_unchained(address _uniswapFactory, address _uniswapRouter) internal onlyInitializing {
-        require(_uniswapFactory != address(0), "ZERO_ADDRESS");
-        require(_uniswapRouter != address(0), "ZERO_ADDRESS");
-
         pair = IUniswapV2Factory(_uniswapFactory).getPair(address(token0), address(token1));
         // require that the pair has been created
         require(pair != address(0), "ZERO_ADDRESS");
