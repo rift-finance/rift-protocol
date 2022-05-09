@@ -52,6 +52,7 @@ contract UniswapVault is Vault, UniswapVaultStorage {
 
     function __UniswapVault_init_unchained(address _uniswapFactory, address _uniswapRouter) internal onlyInitializing {
         pair = IUniswapV2Factory(_uniswapFactory).getPair(address(token0), address(token1));
+
         // require that the pair has been created
         require(pair != address(0), "ZERO_ADDRESS");
 
@@ -124,10 +125,10 @@ contract UniswapVault is Vault, UniswapVaultStorage {
 
         // if we didn't deposit the full `availableToken{x}`, reduce allowance for safety
         if (availableToken0 > token0Deposited) {
-            token0.safeDecreaseAllowance(router, availableToken0 - token0Deposited);
+            token0.safeApprove(router, 0);
         }
         if (availableToken1 > token1Deposited) {
-            token1.safeDecreaseAllowance(router, availableToken1 - token1Deposited);
+            token1.safeApprove(router, 0);
         }
     }
 

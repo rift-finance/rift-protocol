@@ -34,13 +34,13 @@ interface IVault {
 
     /// @dev Emitted upon a strategist updating the token0 floor
     /// @param newFloor the new floor returns on TOKEN0 (out of `RAY`)
-    /// @param admin address of the admin who updated the floor
-    event Token0FloorUpdated(uint256 indexed newFloor, address indexed admin);
+    event Token0FloorUpdated(uint256 newFloor);
 
     /// @dev Emitted upon a strategist updating the token1 floor
     /// @param newFloor the new floor returns on TOKEN1 (out of `RAY`)
-    /// @param admin address of the admin who updated the floor
-    event Token1FloorUpdated(uint256 indexed newFloor, address indexed admin);
+    event Token1FloorUpdated(uint256 newFloor);
+
+    event EpochDurationUpdated(uint256 newEpochDuration);
 
     /// ------------------- Vault Interface -------------------
 

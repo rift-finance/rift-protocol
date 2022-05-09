@@ -9,10 +9,10 @@ interface ICorePermissions is IAccessControlUpgradeable {
     // ----------- Events ---------------------
 
     /// @dev Emitted when the whitelist is disabled by `admin`.
-    event WhitelistDisabled(address indexed admin);
+    event WhitelistDisabled();
 
     /// @dev Emitted when the whitelist is disabled by `admin`.
-    event WhitelistEnabled(address indexed admin);
+    event WhitelistEnabled();
 
     // ----------- Governor only state changing api -----------
 
