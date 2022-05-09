@@ -127,10 +127,10 @@ contract UniswapVault is Vault, UniswapVaultStorage {
 
         // if we didn't deposit the full `availableToken{x}`, reduce allowance for safety
         if (availableToken0 > token0Deposited) {
-            token0.safeDecreaseAllowance(router, availableToken0 - token0Deposited);
+            token0.approve(router, 0);
         }
         if (availableToken1 > token1Deposited) {
-            token1.safeDecreaseAllowance(router, availableToken1 - token1Deposited);
+            token1.approve(router, 0);
         }
     }
 

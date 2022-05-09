@@ -9,7 +9,7 @@ import "./ICore.sol";
 abstract contract CoreStorage is ICore {
     bool public override paused;
 
-    /// @notice The initial fee to be taken from the use of the Rift protocol
+    /// @notice The initial fee to be taken from the use of the Rift protocol out of core.MAX_FEE()
     uint256 public override protocolFee;
 
     /// @notice The destination address for that fee

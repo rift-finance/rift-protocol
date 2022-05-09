@@ -29,7 +29,6 @@ abstract contract CoreReference is Initializable {
     }
 
     function __CoreReference_init_unchained(address coreAddress) internal onlyInitializing {
-        require(coreAddress != address(0), "ZERO_ADDRESS");
         core = ICore(coreAddress);
     }
 

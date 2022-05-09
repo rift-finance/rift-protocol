@@ -12,7 +12,8 @@ import "./ICore.sol";
 contract Core is ICore, CorePermissions, CoreStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    uint256 public constant override MAX_FEE = 10000;
+    /// @dev gives us precision to basis point on fees
+    uint256 public constant override MAX_FEE = 10_000;
 
     // ----------- Upgradeable Constructor Pattern -----------
 
@@ -63,8 +64,6 @@ contract Core is ICore, CorePermissions, CoreStorage {
         address _wrappedNative
     ) internal onlyInitializing {
         require(_protocolFee <= MAX_FEE, "INVALID_PROTOCOL_FEE");
-        require(_feeTo != address(0), "ZERO_ADDRESS");
-        require(_wrappedNative != address(0), "ZERO_ADDRESS");
 
         protocolFee = _protocolFee;
         feeTo = _feeTo;
@@ -77,7 +76,6 @@ contract Core is ICore, CorePermissions, CoreStorage {
     /// @param vaults list of addresses of the new vault contracts
     function registerVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
-            require(vaults[i] != address(0), "ZERO_ADDRESS");
             // Next line returns false if the vault is already registered
             if (registeredVaults.add(vaults[i])) {
                 emit VaultRegistered(vaults[i], msg.sender);
