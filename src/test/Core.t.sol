@@ -27,14 +27,10 @@ contract CoreTest is CoreFixture {
 
     function test_registerVaults() public {
         address vault = vm.addr(10);
-        assertTrue(!core.isRegistered(vault));
 
         vm.prank(governor);
+        // TODO add vm.expectEmit
         core.registerVaults(toArray(vault));
-        assertTrue(core.isRegistered(vault));
-
-        address[] memory registeredVaults = core.getRegisteredVaults();
-        assertEq(registeredVaults[0], vault);
     }
 
     function testFail_registerVaultFromNonGovernor() public {
@@ -50,10 +46,9 @@ contract CoreTest is CoreFixture {
         vm.startPrank(governor);
 
         core.registerVaults(toArray(vault));
-        assertTrue(core.isRegistered(vault));
 
+        // TODO add vm.expectEmit
         core.removeVaults(toArray(vault));
-        assertTrue(!core.isRegistered(vault));
         vm.stopPrank();
     }
 

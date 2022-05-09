@@ -21,11 +21,11 @@ interface ICore is ICorePermissions {
     /// @dev Emitted when the pause is lifted
     event Unpaused();
 
-    // @dev Emitted when a vault with address `vault` is added by `admin`
-    event VaultRegistered(address indexed vault, address indexed admin);
+    // @dev Emitted when a vault with address `vault`
+    event VaultRegistered(address indexed vault);
 
-    // @dev Emitted when a vault with address `vault` is removed by `admin`
-    event VaultRemoved(address indexed vault, address indexed admin);
+    // @dev Emitted when a vault with address `vault`
+    event VaultRemoved(address indexed vault);
 
     // ----------- Default Getters --------------
 
@@ -49,12 +49,6 @@ interface ICore is ICorePermissions {
     function setProtocolFee(uint256 _protocolFee) external;
 
     function setFeeTo(address _feeTo) external;
-
-    // ----------- Getters for Registered Vaults -----------
-
-    function getRegisteredVaults() external view returns (address[] memory);
-
-    function isRegistered(address vault) external view returns (bool);
 
     // ----------- Protocol Pausing -----------
 
