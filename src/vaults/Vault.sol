@@ -701,7 +701,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     function setToken0Floor(uint256 _token0FloorNum) external override onlyStrategist {
         require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
         token0FloorNum = _token0FloorNum;
-        emit Token0FloorUpdated(_token0FloorNum, msg.sender);
+        emit Token0FloorUpdated(_token0FloorNum);
     }
 
     /// @notice sets a new value for the token1 floor
@@ -709,11 +709,12 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     function setToken1Floor(uint256 _token1FloorNum) external override onlyStrategist {
         require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
         token1FloorNum = _token1FloorNum;
-        emit Token1FloorUpdated(_token1FloorNum, msg.sender);
+        emit Token1FloorUpdated(_token1FloorNum);
     }
 
-    function setEpochDuration(uint256 _epochDuration) external override onlyStrategist {
+    function setEpochDuration(uint256 _epochDuration) external override onlyStrategist whenPaused {
         epochDuration = _epochDuration;
+        emit EpochDurationUpdated(_epochDuration);
     }
 
     /// @notice sends accrued fees to the core.feeTo() address, the treasury
