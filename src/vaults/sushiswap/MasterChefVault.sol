@@ -70,8 +70,6 @@ contract MasterChefVault is UniswapVault, SushiswapVaultStorage {
         address _masterChef,
         uint256 _pid
     ) internal onlyInitializing {
-        require(_sushi != address(0), "ZERO_ADDRESS");
-        require(_masterChef != address(0), "ZERO_ADDRESS");
         require(address(IMasterChef(_masterChef).poolInfo(_pid).lpToken) == address(pair), "INVALID_PID");
         sushi = IERC20Upgradeable(_sushi);
         rewarder = _masterChef;

@@ -324,7 +324,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 currEpoch = epoch;
 
         uint256 balanceDay0 = assetData.balanceDay0[user];
-        uint256 pendingDeposits;
 
         // then check if they have any open deposit requests
         Request memory depositReq = assetData.depositRequests[user];
@@ -338,19 +337,19 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
                 balanceDay0 += (depositAmt * RAY) / assetData.epochToRate[depositEpoch];
             } else {
                 // if they have one from this epoch, set the flat amount
-                pendingDeposits = depositAmt;
+                _pendingDeposit = depositAmt;
             }
         }
 
         // Check their withdraw requests, because if they made one
         // their deposit balances would have been flushed to here
         Request memory withdrawReq = assetData.withdrawRequests[user];
-        uint256 claimable = assetData.claimable[user];
+        _claimable = assetData.claimable[user];
         if (withdrawReq.amount > 0) {
             // if they have one from a previous epoch, calculate that
             // requests day 0 Value
             if (withdrawReq.epoch < currEpoch) {
-                claimable += (withdrawReq.amount * assetData.epochToRate[withdrawReq.epoch]) / RAY;
+                _claimable += (withdrawReq.amount * assetData.epochToRate[withdrawReq.epoch]) / RAY;
             } else {
                 // if they have one from this epoch, that means the tokens are still active
                 balanceDay0 += withdrawReq.amount;
@@ -363,7 +362,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         // Note that currEpoch >= 1 since it is initialized to 1 in the constructor
         uint256 currentConversionRate = assetData.epochToRate[currEpoch - 1];
 
-        return ((balanceDay0 * currentConversionRate) / RAY, pendingDeposits, claimable);
+        return ((balanceDay0 * currentConversionRate) / RAY, _pendingDeposit, _claimable);
     }
 
     // ----------- Next Epoch Functions -----------
@@ -387,8 +386,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         onlyStrategist
         whenNotPaused
     {
-        uint256 timePassed = block.timestamp - lastEpochStart;
-        require(timePassed >= epochDuration, "EPOCH_DURATION_UNMET");
+        require(block.timestamp - lastEpochStart >= epochDuration, "EPOCH_DURATION_UNMET");
 
         AssetDataStatics memory _token0Data = _assetDataStatics(token0Data);
         AssetDataStatics memory _token1Data = _assetDataStatics(token1Data);
@@ -506,10 +504,10 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         _token0.available = _token0.available + _token0Data.depositRequestsTotal - _token0.newClaimable;
         _token1.available = _token1.available + _token1Data.depositRequestsTotal - _token1.newClaimable;
 
-        delete token0Data.depositRequestsTotal;
-        delete token0Data.withdrawRequestsTotal;
-        delete token1Data.depositRequestsTotal;
-        delete token1Data.withdrawRequestsTotal;
+        token0Data.depositRequestsTotal = 0;
+        token0Data.withdrawRequestsTotal = 0;
+        token1Data.depositRequestsTotal = 0;
+        token1Data.withdrawRequestsTotal = 0;
 
         // (4) Deposit liquidity back in
         (token0Data.active, token1Data.active) = depositLiquidity(_token0.available, _token1.available);
@@ -523,12 +521,13 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     }
 
     function _assetDataStatics(AssetData storage assetData) internal view returns (AssetDataStatics memory) {
-        AssetDataStatics memory _assetData;
-        _assetData.reserves = assetData.reserves;
-        _assetData.active = assetData.active;
-        _assetData.depositRequestsTotal = assetData.depositRequestsTotal;
-        _assetData.withdrawRequestsTotal = assetData.withdrawRequestsTotal;
-        return _assetData;
+        return
+            AssetDataStatics(
+                assetData.reserves,
+                assetData.active,
+                assetData.depositRequestsTotal,
+                assetData.withdrawRequestsTotal
+            );
     }
 
     // ----------- Abstract Functions Implemented For Each DEX -----------
@@ -729,5 +728,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     }
 
     // To receive any native token sent here (ex. from wrapped native withdraw)
-    receive() external payable {}
+    receive() external payable {
+        // no logic upon reciept of native token required
+    }
 }
