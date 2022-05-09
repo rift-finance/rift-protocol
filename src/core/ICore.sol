@@ -9,6 +9,7 @@ interface ICore is ICorePermissions {
     // ----------- Events ---------------------
 
     /// @dev Emitted when the protocol fee (`protocolFee`) is changed
+    ///   out of core.MAX_FEE()
     event ProtocolFeeUpdated(uint256 protocolFee);
 
     /// @dev Emitted when the protocol fee destination (`feeTo`) is changed
@@ -28,10 +29,12 @@ interface ICore is ICorePermissions {
 
     // ----------- Default Getters --------------
 
+    /// @dev constant set to 10_000
     function MAX_FEE() external view returns (uint256);
 
     function feeTo() external view returns (address);
 
+    /// @dev protocol fee out of core.MAX_FEE()
     function protocolFee() external view returns (uint256);
 
     function wrappedNative() external view returns (address);
@@ -42,6 +45,7 @@ interface ICore is ICorePermissions {
 
     function removeVaults(address[] memory vaults) external;
 
+    /// @dev set core.protocolFee, out of core.MAX_FEE()
     function setProtocolFee(uint256 _protocolFee) external;
 
     function setFeeTo(address _feeTo) external;
