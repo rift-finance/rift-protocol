@@ -9,7 +9,7 @@ interface ICore is ICorePermissions {
     // ----------- Events ---------------------
 
     /// @dev Emitted when the protocol fee (`protocolFee`) is changed
-    event ProtocolFeeUpdated(uint256 indexed protocolFee);
+    event ProtocolFeeUpdated(uint256 protocolFee);
 
     /// @dev Emitted when the protocol fee destination (`feeTo`) is changed
     event FeeToUpdated(address indexed feeTo);
