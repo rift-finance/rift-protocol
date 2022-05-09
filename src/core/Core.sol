@@ -72,25 +72,20 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     // ----------- Main Core Utility --------------
 
-    /// @notice Registers new vault contracts with Core
+    /// @notice Emits VaultRegistered event so list of live vaults is queryable off-chain
     /// @param vaults list of addresses of the new vault contracts
+    /// @dev trust that the governor is benevolent and doesn't spam events
     function registerVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
-            // Next line returns false if the vault is already registered
-            if (registeredVaults.add(vaults[i])) {
-                emit VaultRegistered(vaults[i], msg.sender);
-            }
+            emit VaultRegistered(vaults[i]);
         }
     }
 
-    /// @notice Removes vault contracts from Core
+    /// @notice Emits VaultRemoved so list of deprecated vaults is queryable off-chain
     /// @param vaults list of addresses of the vaults to be removed
     function removeVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
-            // Next line returns false if the vault is already registered
-            if (registeredVaults.remove(vaults[i])) {
-                emit VaultRemoved(vaults[i], msg.sender);
-            }
+            emit VaultRemoved(vaults[i]);
         }
     }
 
@@ -108,19 +103,6 @@ contract Core is ICore, CorePermissions, CoreStorage {
         require(_feeTo != address(0), "ZERO_ADDRESS");
         feeTo = _feeTo;
         emit FeeToUpdated(_feeTo);
-    }
-
-    // ----------- Getters for Registered Core References -----------
-
-    /// @notice Returns a list of registered vault addresses
-    function getRegisteredVaults() external view override returns (address[] memory) {
-        return registeredVaults.values();
-    }
-
-    /// @notice Checks to see if a given address is registered with Core as a vault
-    /// @param vault address to check
-    function isRegistered(address vault) external view override returns (bool) {
-        return registeredVaults.contains(vault);
     }
 
     // ----------- Protocol Pausing -----------

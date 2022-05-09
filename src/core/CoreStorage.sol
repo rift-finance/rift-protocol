@@ -17,7 +17,4 @@ abstract contract CoreStorage is ICore {
 
     /// @notice The address of the globally accepted wrapped native contract for the chain
     address public override wrappedNative;
-
-    /// @dev An enumerable set of all registered vaults
-    EnumerableSet.AddressSet internal registeredVaults;
 }
