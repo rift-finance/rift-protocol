@@ -74,6 +74,7 @@ abstract contract CorePermissions is ICorePermissions, AccessControlUpgradeable 
         override(IAccessControlUpgradeable, AccessControlUpgradeable)
         onlyRole(getRoleAdmin(role))
     {
+        // this ensures that there is at least one GOVERN_ROLE role (last governor cannot self-revoke)
         require(msg.sender != account, "NO_SELFREVOKE");
         _revokeRole(role, account);
     }
