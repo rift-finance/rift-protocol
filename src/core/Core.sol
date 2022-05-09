@@ -141,13 +141,13 @@ contract Core is ICore, CorePermissions, CoreStorage {
     /// that point to this instance of the Core
     function pause() external override onlyRole(PAUSE_ROLE) whenNotPaused {
         paused = true;
-        emit Paused(msg.sender);
+        emit Paused();
     }
 
     /// @notice Unpauses the Rift protocol, including all RiftInstance contracts
     /// that point to this instance of the Core
     function unpause() external override onlyRole(PAUSE_ROLE) whenPaused {
         paused = false;
-        emit Unpaused(msg.sender);
+        emit Unpaused();
     }
 }

@@ -14,11 +14,11 @@ interface ICore is ICorePermissions {
     /// @dev Emitted when the protocol fee destination (`feeTo`) is changed
     event FeeToUpdated(address indexed feeTo);
 
-    /// @dev Emitted when the pause is triggered by `account`.
-    event Paused(address indexed account);
+    /// @dev Emitted when the pause is triggered
+    event Paused();
 
-    /// @dev Emitted when the pause is lifted by `account`.
-    event Unpaused(address indexed account);
+    /// @dev Emitted when the pause is lifted
+    event Unpaused();
 
     // @dev Emitted when a vault with address `vault` is added by `admin`
     event VaultRegistered(address indexed vault, address indexed admin);

@@ -18,11 +18,11 @@ abstract contract CoreReference is Initializable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    /// @dev Emitted when the pause is triggered by `account`.
-    event Paused(address indexed account);
+    /// @dev Emitted when the pause is triggered
+    event Paused();
 
-    /// @dev Emitted when the pause is lifted by `account`.
-    event Unpaused(address indexed account);
+    /// @dev Emitted when the pause is lifted
+    event Unpaused();
 
     function __CoreReference_init(address coreAddress) internal onlyInitializing {
         __CoreReference_init_unchained(coreAddress);
@@ -71,11 +71,11 @@ abstract contract CoreReference is Initializable {
 
     function pause() external onlyPauser whenNotPaused {
         _paused = true;
-        emit Paused(msg.sender);
+        emit Paused();
     }
 
     function unpause() external onlyPauser whenPaused {
         _paused = false;
-        emit Unpaused(msg.sender);
+        emit Unpaused();
     }
 }
