@@ -144,6 +144,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             // we now know the exchange rate at that epoch,
             // so we can add to their balance
             uint256 conversionRate = assetData.epochToRate[req.epoch];
+            // will not overflow even if value = total mc of crypto
             balance += (reqAmount * RAY) / conversionRate;
 
             reqAmount = 0;
@@ -194,6 +195,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         if (req.amount > 0 && req.epoch < currEpoch) {
             // If there was a request from a previous epoch, we now know the corresponding amount
             // that was withdrawn and we can add it to the accumulated amount of claimable assets
+            // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
             assetData.claimable[msg.sender] += (req.amount * assetData.epochToRate[req.epoch]) / RAY;
             req.amount = 0;
         }
@@ -257,6 +259,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             uint256 withdrawAmountDay0 = withdrawReq.amount;
             if (withdrawAmountDay0 > 0) {
                 delete assetData.withdrawRequests[msg.sender];
+                // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
                 claimable += (withdrawAmountDay0 * assetData.epochToRate[withdrawEpoch]) / RAY;
             }
         }
@@ -362,6 +365,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         // Note that currEpoch >= 1 since it is initialized to 1 in the constructor
         uint256 currentConversionRate = assetData.epochToRate[currEpoch - 1];
 
+        // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
         return ((balanceDay0 * currentConversionRate) / RAY, _pendingDeposit, _claimable);
     }
 
@@ -398,6 +402,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
 
         // Total tokens in the liquidity pool and our ownership of those tokens
         (_token0.poolBalance, _token1.poolBalance) = getPoolBalances();
+        // will not overflow with reasonable expectedPoolToken amount (DENOM = 10,000)
         require(_token0.poolBalance >= (expectedPoolToken0 * (DENOM - POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
         require(_token0.poolBalance <= (expectedPoolToken0 * (DENOM + POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
         require(_token1.poolBalance >= (expectedPoolToken1 * (DENOM - POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
@@ -414,6 +419,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         // (2) Perform the swap
 
         // Calculate the floor and ceiling returns for each side
+        // will not overflow with reasonable amounts (token0/1FloorNum ~ 10,000)
         uint256 token0Floor = _token0Data.reserves + (_token0Data.active * token0FloorNum) / DENOM;
         uint256 token1Floor = _token1Data.reserves + (_token1Data.active * token1FloorNum) / DENOM;
         uint256 token1Ceiling = _token1Data.reserves + _token1Data.active;
@@ -478,26 +484,29 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
 
         // collect protocol fee if profitable
         if (_token0.available > _token0.original) {
+            // will not overflow core.protocolFee() < 10,000
             _token0.available -= ((_token0.available - _token0.original) * core.protocolFee()) / core.MAX_FEE();
         }
         if (_token1.available > _token1.original) {
+            // will not overflow core.protocolFee() < 10,000
             _token1.available -= ((_token1.available - _token1.original) * core.protocolFee()) / core.MAX_FEE();
         }
 
         // calculate new rate (before withdraws and deposits) as available tokens divided by
         // tokens that were available at the beginning of the epoch
         // and tally claimable amount (withdraws that are now accounted for) for this token
+        // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
         _token0.newRate = _token0.original > 0
-            ? (token0Data.epochToRate[currEpoch - 1] * _token0.available) / _token0.original
+            ? (token0Data.epochToRate[currEpoch - 1] * _token0.available) / _token0.original // no overflow
             : token0Data.epochToRate[currEpoch - 1];
         token0Data.epochToRate[currEpoch] = _token0.newRate;
-        _token0.newClaimable = (_token0Data.withdrawRequestsTotal * _token0.newRate) / RAY;
+        _token0.newClaimable = (_token0Data.withdrawRequestsTotal * _token0.newRate) / RAY; // no overflow
         token0Data.claimableTotal += _token0.newClaimable;
         _token1.newRate = _token1.original > 0
-            ? (token1Data.epochToRate[currEpoch - 1] * _token1.available) / _token1.original
+            ? (token1Data.epochToRate[currEpoch - 1] * _token1.available) / _token1.original // no overflow
             : token1Data.epochToRate[currEpoch - 1];
         token1Data.epochToRate[currEpoch] = _token1.newRate;
-        _token1.newClaimable = (_token1Data.withdrawRequestsTotal * _token1.newRate) / RAY;
+        _token1.newClaimable = (_token1Data.withdrawRequestsTotal * _token1.newRate) / RAY; // no overflow
         token1Data.claimableTotal += _token1.newClaimable;
 
         // calculate available token after deposits and withdraws
@@ -657,6 +666,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 res = assetData.balanceDay0[user];
         Request memory depositReq = assetData.depositRequests[user];
         if (depositReq.epoch < epoch) {
+            // will not overflow even if value = total mc of crypto
             res += (depositReq.amount * RAY) / assetData.epochToRate[depositReq.epoch];
         }
         Request memory withdrawReq = assetData.withdrawRequests[user];
