@@ -530,12 +530,12 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
 
     function _assetDataStatics(AssetData storage assetData) internal view returns (AssetDataStatics memory) {
         return
-            AssetDataStatics(
-                assetData.reserves,
-                assetData.active,
-                assetData.depositRequestsTotal,
-                assetData.withdrawRequestsTotal
-            );
+            AssetDataStatics({
+                reserves: assetData.reserves,
+                active: assetData.active,
+                depositRequestsTotal: assetData.depositRequestsTotal,
+                withdrawRequestsTotal: assetData.withdrawRequestsTotal
+            });
     }
 
     // ----------- Abstract Functions Implemented For Each DEX -----------
