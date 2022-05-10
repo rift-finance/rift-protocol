@@ -236,9 +236,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
 
         advance();
 
-        (, uint256 active0, , , ) = vault.token0Data();
-        (, uint256 active1, , , ) = vault.token1Data();
-
         assertGt(getToken0Active(), 0);
         assertGt(getToken1Active(), 0);
 
@@ -246,9 +243,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vault.withdrawToken0(token0BalanceDay0 - 100);
 
         advance();
-
-        (, active0, , , ) = vault.token0Data();
-        (, active1, , , ) = vault.token1Data();
 
         assertEq(getToken0Active(), 0);
         assertEq(getToken1Active(), 0);
