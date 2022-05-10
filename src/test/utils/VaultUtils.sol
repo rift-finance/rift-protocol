@@ -80,6 +80,20 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         assertEq(getToken1DepositRequests(), amount);
     }
 
+    function test_depositToken0Fuzz(uint128 _amount) public {
+        vm.assume(_amount > 0);
+        depositToken0(_amount);
+        assertEq(getToken0UserPendingDeposit(), _amount);
+        assertEq(getToken0DepositRequests(), _amount);
+    }
+
+    function test_depositToken1Fuzz(uint128 _amount) public {
+        vm.assume(_amount > 0);
+        depositToken1(_amount);
+        assertEq(getToken1UserPendingDeposit(), _amount);
+        assertEq(getToken1DepositRequests(), _amount);
+    }
+
     function test_depositTwiceInOneEpoch() public {
         depositToken0();
         depositToken0();
@@ -127,6 +141,50 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         advance();
         assertEq(getToken0UserWithdrawRequests(), 0);
         assertEq(getToken0UserClaimable(), amount);
+    }
+
+    function test_withdrawFuzzToken0(uint128 _amount) public {
+        // withdraw between 1 and full amount of tokens
+        uint256 withdrawAmntDay0 = toRange(_amount, 1, amount);
+        depositToken0();
+        depositToken1();
+
+        advance();
+
+        vault.withdrawToken0((withdrawAmntDay0));
+
+        assertEq(getToken0UserWithdrawRequests(), withdrawAmntDay0);
+        assertEq(getToken0UserClaimable(), 0);
+
+        advance();
+        assertEq(getToken0UserWithdrawRequests(), 0);
+        assertEq(vault.token0BalanceDay0(address(this)), amount - withdrawAmntDay0);
+
+        uint256 rate = vault.epochToToken0Rate(vault.epoch() - 1);
+        uint256 withdrawAmount = (withdrawAmntDay0 * rate) / vault.RAY();
+        assertEq(getToken0UserClaimable(), withdrawAmount);
+    }
+
+    function test_withdrawFuzzToken1(uint128 _amount) public {
+        // withdraw between 1 and full amount of tokens
+        uint256 withdrawAmntDay0 = toRange(_amount, 1, amount);
+        depositToken0();
+        depositToken1();
+
+        advance();
+
+        vault.withdrawToken1((withdrawAmntDay0));
+
+        assertEq(getToken1UserWithdrawRequests(), withdrawAmntDay0);
+        assertEq(getToken1UserClaimable(), 0);
+
+        advance();
+        assertEq(getToken1UserWithdrawRequests(), 0);
+        assertEq(vault.token1BalanceDay0(address(this)), amount - withdrawAmntDay0);
+
+        uint256 rate = vault.epochToToken1Rate(vault.epoch() - 1);
+        uint256 withdrawAmount = (withdrawAmntDay0 * rate) / vault.RAY();
+        assertEq(getToken1UserClaimable(), withdrawAmount);
     }
 
     function test_withdrawTwiceInOneEpoch() public {
@@ -211,6 +269,20 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
 
         assertEq(getToken0Reserves(), amount);
         assertEq(getToken0Active(), 0);
+    }
+
+    function test_depositAdvanceFuzz(uint128 _amount) public {
+        // note: full uint128 range causes UniswapV2: OVERFLOW error
+        uint256 depositAmnt = toRange(_amount, vault.MIN_LP(), type(uint96).max);
+
+        depositToken0(depositAmnt);
+        depositToken1(depositAmnt);
+
+        advance();
+        assertEq(getToken0Active(), depositAmnt);
+        assertEq(getToken0Reserves(), 0);
+        assertEq(getToken1Active(), depositAmnt);
+        assertEq(getToken1Reserves(), 0);
     }
 
     function test_nextEpochWithBadReservesRevert() public {
@@ -332,20 +404,28 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
     }
 
     function depositToken0() internal {
-        getToken0(address(this), amount);
+        depositToken0(amount);
+    }
+
+    function depositToken0(uint256 _amount) internal {
+        getToken0(address(this), _amount);
         if (vault.isNativeVault()) {
-            weth.withdraw(amount);
-            vault.depositToken0{ value: amount }(0);
+            weth.withdraw(_amount);
+            vault.depositToken0{ value: _amount }(0);
         } else {
-            token0.approve(address(vault), amount);
-            vault.depositToken0(amount);
+            token0.approve(address(vault), _amount);
+            vault.depositToken0(_amount);
         }
     }
 
     function depositToken1() internal {
-        getToken1(address(this), amount);
-        token1.approve(address(vault), amount);
-        vault.depositToken1(amount);
+        depositToken1(amount);
+    }
+
+    function depositToken1(uint256 _amount) internal {
+        getToken1(address(this), _amount);
+        token1.approve(address(vault), _amount);
+        vault.depositToken1(_amount);
     }
 
     function claimToken0() internal {
@@ -426,5 +506,13 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         getToken0(address(pair), token0Amount);
         getToken1(address(pair), token1Amount);
         pair.sync();
+    }
+
+    function toRange(
+        uint128 input,
+        uint256 min,
+        uint256 max
+    ) internal pure returns (uint256 output) {
+        output = (min + (uint256(input) * (max - min)) / (type(uint128).max));
     }
 }
