@@ -230,6 +230,54 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vault.nextEpoch(reserves0, reserves1 * 2);
     }
 
+    function test_dontDepositLessThanMIN_LPt0() public {
+        depositToken0();
+        depositToken1();
+
+        advance();
+
+        (, uint256 active0, , , ) = vault.token0Data();
+        (, uint256 active1, , , ) = vault.token1Data();
+
+        assertGt(active0, 0);
+        assertGt(active1, 0);
+
+        uint256 token0BalanceDay0 = vault.token0BalanceDay0(address(this));
+        vault.withdrawToken0(token0BalanceDay0 - 100);
+
+        advance();
+
+        (, active0, , , ) = vault.token0Data();
+        (, active1, , , ) = vault.token1Data();
+
+        assertEq(active0, 0);
+        assertEq(active1, 0);
+    }
+
+    function test_dontDepositLessThanMIN_LPt1() public {
+        depositToken0();
+        depositToken1();
+
+        advance();
+
+        (, uint256 active0, , , ) = vault.token0Data();
+        (, uint256 active1, , , ) = vault.token1Data();
+
+        assertGt(active0, 0);
+        assertGt(active1, 0);
+
+        uint256 token1BalanceDay0 = vault.token1BalanceDay0(address(this));
+        vault.withdrawToken1(token1BalanceDay0 - 100);
+
+        advance();
+
+        (, active0, , , ) = vault.token0Data();
+        (, active1, , , ) = vault.token1Data();
+
+        assertEq(active0, 0);
+        assertEq(active1, 0);
+    }
+
     function test_canRescueTokens() public {
         depositToken0();
         depositToken1();
