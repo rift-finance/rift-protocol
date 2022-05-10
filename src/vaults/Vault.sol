@@ -208,7 +208,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         }
 
         // Add it to their withdraw request and log the epoch
-        // Request storage userWithdrawRequest = assetData.withdrawRequests[msg.sender];
         req.amount = _withdrawAmountDay0 + req.amount;
         if (req.epoch < currEpoch) {
             req.epoch = currEpoch;
