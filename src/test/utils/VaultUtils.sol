@@ -302,6 +302,26 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vault.nextEpoch(reserves0, reserves1 * 2);
     }
 
+    function test_dontDepositLessThanMIN_LPt0() public {
+        depositToken0(vault.MIN_LP() - 1);
+        depositToken1();
+
+        advance();
+
+        assertEq(getToken0Active(), 0);
+        assertEq(getToken1Active(), 0);
+    }
+
+    function test_dontDepositLessThanMIN_LPt1() public {
+        depositToken0();
+        depositToken1(vault.MIN_LP() - 1);
+
+        advance();
+
+        assertEq(getToken0Active(), 0);
+        assertEq(getToken1Active(), 0);
+    }
+
     function test_canRescueTokens() public {
         depositToken0();
         depositToken1();
