@@ -68,9 +68,9 @@ abstract contract VaultStorageUnpadded {
     /// @notice keeps track of relevant data for TOKEN1
     AssetData public token1Data;
 
-    /// @notice minimum return for TOKEN0 (out of `DENOM`) as long as TOKEN1 is above its minimum return
+    /// @notice minimum return for TOKEN0 (out of `vault.DENOM`) as long as TOKEN1 is above its minimum return
     uint256 public token0FloorNum;
-    /// @notice minimum return for TOKEN1 (out of `DENOM`)
+    /// @notice minimum return for TOKEN1 (out of `vault.DENOM`)
     uint256 public token1FloorNum;
 }
 

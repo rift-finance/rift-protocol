@@ -9,29 +9,32 @@ interface ICore is ICorePermissions {
     // ----------- Events ---------------------
 
     /// @dev Emitted when the protocol fee (`protocolFee`) is changed
-    event ProtocolFeeUpdated(uint256 indexed protocolFee);
+    ///   out of core.MAX_FEE()
+    event ProtocolFeeUpdated(uint256 protocolFee);
 
     /// @dev Emitted when the protocol fee destination (`feeTo`) is changed
     event FeeToUpdated(address indexed feeTo);
 
-    /// @dev Emitted when the pause is triggered by `account`.
-    event Paused(address indexed account);
+    /// @dev Emitted when the pause is triggered
+    event Paused();
 
-    /// @dev Emitted when the pause is lifted by `account`.
-    event Unpaused(address indexed account);
+    /// @dev Emitted when the pause is lifted
+    event Unpaused();
 
-    // @dev Emitted when a vault with address `vault` is added by `admin`
-    event VaultRegistered(address indexed vault, address indexed admin);
+    // @dev Emitted when a vault with address `vault`
+    event VaultRegistered(address indexed vault);
 
-    // @dev Emitted when a vault with address `vault` is removed by `admin`
-    event VaultRemoved(address indexed vault, address indexed admin);
+    // @dev Emitted when a vault with address `vault`
+    event VaultRemoved(address indexed vault);
 
     // ----------- Default Getters --------------
 
+    /// @dev constant set to 10_000
     function MAX_FEE() external view returns (uint256);
 
     function feeTo() external view returns (address);
 
+    /// @dev protocol fee out of core.MAX_FEE()
     function protocolFee() external view returns (uint256);
 
     function wrappedNative() external view returns (address);
@@ -42,15 +45,10 @@ interface ICore is ICorePermissions {
 
     function removeVaults(address[] memory vaults) external;
 
+    /// @dev set core.protocolFee, out of core.MAX_FEE()
     function setProtocolFee(uint256 _protocolFee) external;
 
     function setFeeTo(address _feeTo) external;
-
-    // ----------- Getters for Registered Vaults -----------
-
-    function getRegisteredVaults() external view returns (address[] memory);
-
-    function isRegistered(address vault) external view returns (bool);
 
     // ----------- Protocol Pausing -----------
 

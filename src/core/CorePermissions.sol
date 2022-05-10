@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlEnumerableUpgradeable.sol";
+import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "./ICorePermissions.sol";
 
 /// @title Access control module for Core
 /// @author Recursive Research Inc
-abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUpgradeable {
+abstract contract CorePermissions is ICorePermissions, AccessControlUpgradeable {
     bytes32 public constant override GOVERN_ROLE = keccak256("GOVERN_ROLE");
     bytes32 public constant override GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     bytes32 public constant override PAUSE_ROLE = keccak256("PAUSE_ROLE");
@@ -26,7 +26,7 @@ abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUp
         address pauser,
         address strategist
     ) internal onlyInitializing {
-        __AccessControlEnumerable_init();
+        __AccessControl_init();
         __CorePermissions_init_unchained(governor, guardian, pauser, strategist);
     }
 
@@ -36,11 +36,6 @@ abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUp
         address pauser,
         address strategist
     ) internal onlyInitializing {
-        require(guardian != address(0), "ZERO_ADDRESS");
-        require(governor != address(0), "ZERO_ADDRESS");
-        require(pauser != address(0), "ZERO_ADDRESS");
-        require(strategist != address(0), "ZERO_ADDRESS");
-
         _setRoleAdmin(GOVERN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(GUARDIAN_ROLE, GOVERN_ROLE);
         _setRoleAdmin(PAUSE_ROLE, GOVERN_ROLE);
@@ -69,9 +64,14 @@ abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUp
         }
     }
 
-    function revokeRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
+    function revokeRole(bytes32 role, address account)
+        public
+        override(IAccessControlUpgradeable, AccessControlUpgradeable)
+        onlyRole(getRoleAdmin(role))
+    {
+        // this ensures that there is at least one GOVERN_ROLE role (last governor cannot self-revoke)
+        require(msg.sender != account, "NO_SELFREVOKE");
         _revokeRole(role, account);
-        require(role != GOVERN_ROLE || getRoleMemberCount(role) >= 1, "LAST_GOVERNOR");
     }
 
     function isWhitelisted(address _address) public view override returns (bool) {
@@ -81,14 +81,14 @@ abstract contract CorePermissions is ICorePermissions, AccessControlEnumerableUp
     function disableWhitelist() external override onlyRole(GOVERN_ROLE) {
         if (!whitelistDisabled) {
             whitelistDisabled = true;
-            emit WhitelistDisabled(msg.sender);
+            emit WhitelistDisabled();
         }
     }
 
     function enableWhitelist() external override onlyRole(GOVERN_ROLE) {
         if (whitelistDisabled) {
             whitelistDisabled = false;
-            emit WhitelistEnabled(msg.sender);
+            emit WhitelistEnabled();
         }
     }
 }

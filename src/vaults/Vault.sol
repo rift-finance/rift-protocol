@@ -21,9 +21,10 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     bytes32 public constant TOKEN0 = keccak256("TOKEN0");
     bytes32 public constant TOKEN1 = keccak256("TOKEN1");
 
-    uint256 public constant RAY = 10**27;
+    uint256 public constant RAY = 1e27;
     uint256 public constant POOL_ERR = 50; // 0.5% error margin allowed
     uint256 public constant DENOM = 10_000;
+    uint256 public constant MIN_LP = 1000; // minimum amount of tokens to be deposited as LP
 
     // ----------- Upgradeable Constructor Pattern -----------
 
@@ -57,8 +58,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 _token0FloorNum,
         uint256 _token1FloorNum
     ) internal onlyInitializing {
-        require(_token0 != address(0), "ZERO_ADDRESS");
-        require(_token1 != address(0), "ZERO_ADDRESS");
         require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
         require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
 
@@ -145,6 +144,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             // we now know the exchange rate at that epoch,
             // so we can add to their balance
             uint256 conversionRate = assetData.epochToRate[req.epoch];
+            // will not overflow even if value = total mc of crypto
             balance += (reqAmount * RAY) / conversionRate;
 
             reqAmount = 0;
@@ -191,10 +191,11 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 userBalanceDay0 = __updateDepositRequests(assetData, currEpoch, 0);
 
         // See if there were any existing withdraw requests
-        Request memory req = assetData.withdrawRequests[msg.sender];
+        Request storage req = assetData.withdrawRequests[msg.sender];
         if (req.amount > 0 && req.epoch < currEpoch) {
             // If there was a request from a previous epoch, we now know the corresponding amount
             // that was withdrawn and we can add it to the accumulated amount of claimable assets
+            // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
             assetData.claimable[msg.sender] += (req.amount * assetData.epochToRate[req.epoch]) / RAY;
             req.amount = 0;
         }
@@ -207,9 +208,9 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         }
 
         // Add it to their withdraw request and log the epoch
-        assetData.withdrawRequests[msg.sender].amount = _withdrawAmountDay0 + req.amount;
+        req.amount = _withdrawAmountDay0 + req.amount;
         if (req.epoch < currEpoch) {
-            assetData.withdrawRequests[msg.sender].epoch = currEpoch;
+            req.epoch = currEpoch;
         }
 
         // track total withdraw requests
@@ -257,6 +258,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             uint256 withdrawAmountDay0 = withdrawReq.amount;
             if (withdrawAmountDay0 > 0) {
                 delete assetData.withdrawRequests[msg.sender];
+                // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
                 claimable += (withdrawAmountDay0 * assetData.epochToRate[withdrawEpoch]) / RAY;
             }
         }
@@ -324,7 +326,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 currEpoch = epoch;
 
         uint256 balanceDay0 = assetData.balanceDay0[user];
-        uint256 pendingDeposits;
 
         // then check if they have any open deposit requests
         Request memory depositReq = assetData.depositRequests[user];
@@ -338,19 +339,19 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
                 balanceDay0 += (depositAmt * RAY) / assetData.epochToRate[depositEpoch];
             } else {
                 // if they have one from this epoch, set the flat amount
-                pendingDeposits = depositAmt;
+                _pendingDeposit = depositAmt;
             }
         }
 
         // Check their withdraw requests, because if they made one
         // their deposit balances would have been flushed to here
         Request memory withdrawReq = assetData.withdrawRequests[user];
-        uint256 claimable = assetData.claimable[user];
+        _claimable = assetData.claimable[user];
         if (withdrawReq.amount > 0) {
             // if they have one from a previous epoch, calculate that
             // requests day 0 Value
             if (withdrawReq.epoch < currEpoch) {
-                claimable += (withdrawReq.amount * assetData.epochToRate[withdrawReq.epoch]) / RAY;
+                _claimable += (withdrawReq.amount * assetData.epochToRate[withdrawReq.epoch]) / RAY;
             } else {
                 // if they have one from this epoch, that means the tokens are still active
                 balanceDay0 += withdrawReq.amount;
@@ -363,7 +364,8 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         // Note that currEpoch >= 1 since it is initialized to 1 in the constructor
         uint256 currentConversionRate = assetData.epochToRate[currEpoch - 1];
 
-        return ((balanceDay0 * currentConversionRate) / RAY, pendingDeposits, claimable);
+        // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
+        return ((balanceDay0 * currentConversionRate) / RAY, _pendingDeposit, _claimable);
     }
 
     // ----------- Next Epoch Functions -----------
@@ -387,8 +389,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         onlyStrategist
         whenNotPaused
     {
-        uint256 timePassed = block.timestamp - lastEpochStart;
-        require(timePassed >= epochDuration, "EPOCH_DURATION_UNMET");
+        require(block.timestamp - lastEpochStart >= epochDuration, "EPOCH_DURATION_UNMET");
 
         AssetDataStatics memory _token0Data = _assetDataStatics(token0Data);
         AssetDataStatics memory _token1Data = _assetDataStatics(token1Data);
@@ -400,6 +401,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
 
         // Total tokens in the liquidity pool and our ownership of those tokens
         (_token0.poolBalance, _token1.poolBalance) = getPoolBalances();
+        // will not overflow with reasonable expectedPoolToken amount (DENOM = 10,000)
         require(_token0.poolBalance >= (expectedPoolToken0 * (DENOM - POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
         require(_token0.poolBalance <= (expectedPoolToken0 * (DENOM + POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
         require(_token1.poolBalance >= (expectedPoolToken1 * (DENOM - POOL_ERR)) / DENOM, "UNEXPECTED_POOL_BALANCES");
@@ -416,6 +418,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         // (2) Perform the swap
 
         // Calculate the floor and ceiling returns for each side
+        // will not overflow with reasonable amounts (token0/1FloorNum ~ 10,000)
         uint256 token0Floor = _token0Data.reserves + (_token0Data.active * token0FloorNum) / DENOM;
         uint256 token1Floor = _token1Data.reserves + (_token1Data.active * token1FloorNum) / DENOM;
         uint256 token1Ceiling = _token1Data.reserves + _token1Data.active;
@@ -429,22 +432,16 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             if (token0Deficit > _token0.poolBalance) {
                 token1NeededToSwap = _token1.available;
             } else {
-                token1NeededToSwap = calcAmountIn(
-                    token0Floor - _token0.available,
-                    _token1.poolBalance,
-                    _token0.poolBalance
-                );
+                token1NeededToSwap = calcAmountIn(token0Deficit, _token1.poolBalance, _token0.poolBalance);
             }
 
             // swap as much token1 as is necessary to get back to the token0 floor, without going
             // under the token1 floor
             uint256 swapAmount = (token1Ceiling + token1NeededToSwap < _token1.available)
                 ? _token1.available - token1Ceiling
-                : (
-                    token1NeededToSwap + token1Floor > _token1.available
-                        ? _token1.available - token1Floor
-                        : token1NeededToSwap
-                );
+                : token1NeededToSwap + token1Floor > _token1.available
+                ? _token1.available - token1Floor
+                : token1NeededToSwap;
 
             (uint256 amountOut, uint256 amountConsumed) = swap(token1, token0, swapAmount);
             _token0.available += amountOut;
@@ -464,11 +461,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
             if (token1Deficit > _token1.poolBalance) {
                 token0NeededToSwap = _token0.poolBalance;
             } else {
-                token0NeededToSwap = calcAmountIn(
-                    token1Ceiling - _token1.available,
-                    _token0.poolBalance,
-                    _token1.poolBalance
-                );
+                token0NeededToSwap = calcAmountIn(token1Deficit, _token0.poolBalance, _token1.poolBalance);
             }
 
             if (token0Floor + token0NeededToSwap < _token0.available) {
@@ -490,36 +483,39 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
 
         // collect protocol fee if profitable
         if (_token0.available > _token0.original) {
+            // will not overflow core.protocolFee() < 10,000
             _token0.available -= ((_token0.available - _token0.original) * core.protocolFee()) / core.MAX_FEE();
         }
         if (_token1.available > _token1.original) {
+            // will not overflow core.protocolFee() < 10,000
             _token1.available -= ((_token1.available - _token1.original) * core.protocolFee()) / core.MAX_FEE();
         }
 
         // calculate new rate (before withdraws and deposits) as available tokens divided by
         // tokens that were available at the beginning of the epoch
         // and tally claimable amount (withdraws that are now accounted for) for this token
+        // tokenAmount * epochToRate will not overflow even if value = total mc of crypto & rate = 3.8e10 * RAY
         _token0.newRate = _token0.original > 0
-            ? (token0Data.epochToRate[currEpoch - 1] * _token0.available) / _token0.original
+            ? (token0Data.epochToRate[currEpoch - 1] * _token0.available) / _token0.original // no overflow
             : token0Data.epochToRate[currEpoch - 1];
         token0Data.epochToRate[currEpoch] = _token0.newRate;
-        _token0.newClaimable = (_token0Data.withdrawRequestsTotal * _token0.newRate) / RAY;
+        _token0.newClaimable = (_token0Data.withdrawRequestsTotal * _token0.newRate) / RAY; // no overflow
         token0Data.claimableTotal += _token0.newClaimable;
         _token1.newRate = _token1.original > 0
-            ? (token1Data.epochToRate[currEpoch - 1] * _token1.available) / _token1.original
+            ? (token1Data.epochToRate[currEpoch - 1] * _token1.available) / _token1.original // no overflow
             : token1Data.epochToRate[currEpoch - 1];
         token1Data.epochToRate[currEpoch] = _token1.newRate;
-        _token1.newClaimable = (_token1Data.withdrawRequestsTotal * _token1.newRate) / RAY;
+        _token1.newClaimable = (_token1Data.withdrawRequestsTotal * _token1.newRate) / RAY; // no overflow
         token1Data.claimableTotal += _token1.newClaimable;
 
         // calculate available token after deposits and withdraws
         _token0.available = _token0.available + _token0Data.depositRequestsTotal - _token0.newClaimable;
         _token1.available = _token1.available + _token1Data.depositRequestsTotal - _token1.newClaimable;
 
-        delete token0Data.depositRequestsTotal;
-        delete token0Data.withdrawRequestsTotal;
-        delete token1Data.depositRequestsTotal;
-        delete token1Data.withdrawRequestsTotal;
+        token0Data.depositRequestsTotal = 0;
+        token0Data.withdrawRequestsTotal = 0;
+        token1Data.depositRequestsTotal = 0;
+        token1Data.withdrawRequestsTotal = 0;
 
         // (4) Deposit liquidity back in
         (token0Data.active, token1Data.active) = depositLiquidity(_token0.available, _token1.available);
@@ -533,12 +529,13 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     }
 
     function _assetDataStatics(AssetData storage assetData) internal view returns (AssetDataStatics memory) {
-        AssetDataStatics memory _assetData;
-        _assetData.reserves = assetData.reserves;
-        _assetData.active = assetData.active;
-        _assetData.depositRequestsTotal = assetData.depositRequestsTotal;
-        _assetData.withdrawRequestsTotal = assetData.withdrawRequestsTotal;
-        return _assetData;
+        return
+            AssetDataStatics({
+                reserves: assetData.reserves,
+                active: assetData.active,
+                depositRequestsTotal: assetData.depositRequestsTotal,
+                withdrawRequestsTotal: assetData.withdrawRequestsTotal
+            });
     }
 
     // ----------- Abstract Functions Implemented For Each DEX -----------
@@ -571,8 +568,8 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         internal
         returns (uint256 token0Deposited, uint256 token1Deposited)
     {
-        // ensure sufficient liquidity is minted, if < 1 gwei don't activate those funds
-        if ((availableToken0 < (1 gwei)) || (availableToken1 < (1 gwei))) return (0, 0);
+        // ensure sufficient liquidity is minted, if < MIN_LP don't activate those funds
+        if ((availableToken0 < MIN_LP) || (availableToken1 < MIN_LP)) return (0, 0);
         (token0Deposited, token1Deposited) = _depositLiquidity(availableToken0, availableToken1);
         _stakeLiquidity();
     }
@@ -668,6 +665,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 res = assetData.balanceDay0[user];
         Request memory depositReq = assetData.depositRequests[user];
         if (depositReq.epoch < epoch) {
+            // will not overflow even if value = total mc of crypto
             res += (depositReq.amount * RAY) / assetData.epochToRate[depositReq.epoch];
         }
         Request memory withdrawReq = assetData.withdrawRequests[user];
@@ -711,7 +709,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     function setToken0Floor(uint256 _token0FloorNum) external override onlyStrategist {
         require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
         token0FloorNum = _token0FloorNum;
-        emit Token0FloorUpdated(_token0FloorNum, msg.sender);
+        emit Token0FloorUpdated(_token0FloorNum);
     }
 
     /// @notice sets a new value for the token1 floor
@@ -719,11 +717,12 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     function setToken1Floor(uint256 _token1FloorNum) external override onlyStrategist {
         require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
         token1FloorNum = _token1FloorNum;
-        emit Token1FloorUpdated(_token1FloorNum, msg.sender);
+        emit Token1FloorUpdated(_token1FloorNum);
     }
 
-    function setEpochDuration(uint256 _epochDuration) external override onlyStrategist {
+    function setEpochDuration(uint256 _epochDuration) external override onlyStrategist whenPaused {
         epochDuration = _epochDuration;
+        emit EpochDurationUpdated(_epochDuration);
     }
 
     /// @notice sends accrued fees to the core.feeTo() address, the treasury
@@ -738,5 +737,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     }
 
     // To receive any native token sent here (ex. from wrapped native withdraw)
-    receive() external payable {}
+    receive() external payable {
+        // no logic upon reciept of native token required
+    }
 }

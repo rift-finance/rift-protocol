@@ -12,7 +12,8 @@ import "./ICore.sol";
 contract Core is ICore, CorePermissions, CoreStorage {
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    uint256 public constant override MAX_FEE = 10000;
+    /// @dev gives us precision to basis point on fees
+    uint256 public constant override MAX_FEE = 10_000;
 
     // ----------- Upgradeable Constructor Pattern -----------
 
@@ -63,8 +64,6 @@ contract Core is ICore, CorePermissions, CoreStorage {
         address _wrappedNative
     ) internal onlyInitializing {
         require(_protocolFee <= MAX_FEE, "INVALID_PROTOCOL_FEE");
-        require(_feeTo != address(0), "ZERO_ADDRESS");
-        require(_wrappedNative != address(0), "ZERO_ADDRESS");
 
         protocolFee = _protocolFee;
         feeTo = _feeTo;
@@ -73,26 +72,20 @@ contract Core is ICore, CorePermissions, CoreStorage {
 
     // ----------- Main Core Utility --------------
 
-    /// @notice Registers new vault contracts with Core
+    /// @notice Emits VaultRegistered event so list of live vaults is queryable off-chain
     /// @param vaults list of addresses of the new vault contracts
+    /// @dev trust that the governor is benevolent and doesn't spam events
     function registerVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
-            require(vaults[i] != address(0), "ZERO_ADDRESS");
-            // Next line returns false if the vault is already registered
-            if (registeredVaults.add(vaults[i])) {
-                emit VaultRegistered(vaults[i], msg.sender);
-            }
+            emit VaultRegistered(vaults[i]);
         }
     }
 
-    /// @notice Removes vault contracts from Core
+    /// @notice Emits VaultRemoved so list of deprecated vaults is queryable off-chain
     /// @param vaults list of addresses of the vaults to be removed
     function removeVaults(address[] memory vaults) external override onlyRole(GOVERN_ROLE) whenNotPaused {
         for (uint256 i = 0; i < vaults.length; i++) {
-            // Next line returns false if the vault is already registered
-            if (registeredVaults.remove(vaults[i])) {
-                emit VaultRemoved(vaults[i], msg.sender);
-            }
+            emit VaultRemoved(vaults[i]);
         }
     }
 
@@ -112,19 +105,6 @@ contract Core is ICore, CorePermissions, CoreStorage {
         emit FeeToUpdated(_feeTo);
     }
 
-    // ----------- Getters for Registered Core References -----------
-
-    /// @notice Returns a list of registered vault addresses
-    function getRegisteredVaults() external view override returns (address[] memory) {
-        return registeredVaults.values();
-    }
-
-    /// @notice Checks to see if a given address is registered with Core as a vault
-    /// @param vault address to check
-    function isRegistered(address vault) external view override returns (bool) {
-        return registeredVaults.contains(vault);
-    }
-
     // ----------- Protocol Pausing -----------
 
     modifier whenNotPaused() {
@@ -141,13 +121,13 @@ contract Core is ICore, CorePermissions, CoreStorage {
     /// that point to this instance of the Core
     function pause() external override onlyRole(PAUSE_ROLE) whenNotPaused {
         paused = true;
-        emit Paused(msg.sender);
+        emit Paused();
     }
 
     /// @notice Unpauses the Rift protocol, including all RiftInstance contracts
     /// that point to this instance of the Core
     function unpause() external override onlyRole(PAUSE_ROLE) whenPaused {
         paused = false;
-        emit Unpaused(msg.sender);
+        emit Unpaused();
     }
 }
