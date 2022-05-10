@@ -191,7 +191,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 userBalanceDay0 = __updateDepositRequests(assetData, currEpoch, 0);
 
         // See if there were any existing withdraw requests
-        Request memory req = assetData.withdrawRequests[msg.sender];
+        Request storage req = assetData.withdrawRequests[msg.sender];
         if (req.amount > 0 && req.epoch < currEpoch) {
             // If there was a request from a previous epoch, we now know the corresponding amount
             // that was withdrawn and we can add it to the accumulated amount of claimable assets
@@ -208,10 +208,10 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         }
 
         // Add it to their withdraw request and log the epoch
-        Request storage userWithdrawRequest = assetData.withdrawRequests[msg.sender];
-        userWithdrawRequest.amount = _withdrawAmountDay0 + req.amount;
+        // Request storage userWithdrawRequest = assetData.withdrawRequests[msg.sender];
+        req.amount = _withdrawAmountDay0 + req.amount;
         if (req.epoch < currEpoch) {
-            userWithdrawRequest.epoch = currEpoch;
+            req.epoch = currEpoch;
         }
 
         // track total withdraw requests
