@@ -271,18 +271,22 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         assertEq(getToken0Active(), 0);
     }
 
-    function test_depositAdvanceFuzz(uint128 _amount) public {
-        // note: full uint128 range causes UniswapV2: OVERFLOW error
-        uint256 depositAmnt = toRange(_amount, vault.MIN_LP(), type(uint96).max);
+    function test_depositAdvanceFuzz(uint128 _amount0, uint128 _amount1) public {
+        // note: reserves > max uint112 cause UniswapV2: OVERFLOW error
+        (uint256 r0, uint256 r1) = getPairReserves();
+        uint256 depositAmnt0 = toRange(_amount0, vault.MIN_LP(), type(uint112).max - r0);
+        uint256 depositAmnt1 = toRange(_amount1, vault.MIN_LP(), type(uint112).max - r1);
 
-        depositToken0(depositAmnt);
-        depositToken1(depositAmnt);
+        depositToken0(depositAmnt0);
+        depositToken1(depositAmnt1);
 
         advance();
+
+        uint256 depositAmnt = depositAmnt0 < depositAmnt1 ? depositAmnt0 : depositAmnt1;
         assertEq(getToken0Active(), depositAmnt);
-        assertEq(getToken0Reserves(), 0);
+        assertEq(getToken0Reserves(), depositAmnt0 - depositAmnt);
         assertEq(getToken1Active(), depositAmnt);
-        assertEq(getToken1Reserves(), 0);
+        assertEq(getToken1Reserves(), depositAmnt1 - depositAmnt);
     }
 
     function test_nextEpochWithBadReservesRevert() public {
