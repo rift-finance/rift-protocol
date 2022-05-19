@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
-import { DSTest } from "ds-test/test.sol";
-import { Vm } from "forge-std/Vm.sol";
+import { DSTest } from "../../../lib/ds-test/src/test.sol";
+import { Vm } from "../../../lib/forge-std/src/Vm.sol";
 
 import { ProxyAdmin } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "../../../lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
