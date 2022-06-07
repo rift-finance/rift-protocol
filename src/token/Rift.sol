@@ -4,10 +4,7 @@ pragma solidity 0.8.11;
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-import "./IRift.sol";
-
 contract Rift is AccessControlUpgradeable, ERC20VotesUpgradeable {
-    uint216[400] private __gap; // in case we want to extend the contract in the future
     address public owner;
     address public pendingOwner;
 
