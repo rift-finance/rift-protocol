@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/IAccessControlUpgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/governance/utils/IVotesUpgradeable.sol";
+import { IERC20Upgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
+import { IAccessControlUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/IAccessControlUpgradeable.sol";
+import { IERC20PermitUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
+import { IVotesUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/governance/utils/IVotesUpgradeable.sol";
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import { IERC20MetadataUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
 interface IRift is
     IAccessControlUpgradeable,

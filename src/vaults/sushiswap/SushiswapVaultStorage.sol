@@ -3,8 +3,8 @@ pragma solidity 0.8.11;
 
 // Need to use IERC20Upgradeable because that is what SafeERC20Upgradeable requires
 // but the interface is exactly the same as ERC20s so this still works with ERC20s
-import "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
-import "../uniswap/UniswapVaultStorage.sol";
+import { IERC20Upgradeable } from "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
+import { UniswapVaultStorage } from "../uniswap/UniswapVaultStorage.sol";
 
 /// @notice Storage for all Sushi Vaults
 /// For simplicity, we use the same storage for the MasterChefVault and the

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import { AccessControlUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import { ERC20VotesUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
 contract Rift is AccessControlUpgradeable, ERC20VotesUpgradeable {
     address public owner;

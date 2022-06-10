@@ -5,13 +5,13 @@ pragma solidity 0.8.11;
 // which uses delegeatecall functions, which are not allowed by OZ's upgrade process
 // See more:
 // https://forum.openzeppelin.com/t/error-contract-is-not-upgrade-safe-use-of-delegatecall-is-not-allowed/16859
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
+import { SafeERC20Upgradeable, IERC20Upgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../external/IWrappy.sol";
-import "../refs/CoreReference.sol";
-import "./VaultStorage.sol";
-import "./IVault.sol";
+import { IWrappy } from "../external/IWrappy.sol";
+import { CoreReference } from "../refs/CoreReference.sol";
+import { VaultStorage } from "./VaultStorage.sol";
+import { IVault } from "./IVault.sol";
 
 /// @notice Contains the primary logic for vaults
 /// @author Recursive Research Inc

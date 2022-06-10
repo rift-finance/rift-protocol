@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Initializable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-import "../core/ICore.sol";
+import { ICore } from "../core/ICore.sol";
 
 /// @notice Stores a reference to the core contract
 /// @author Recursive Research Inc

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import "./CorePermissions.sol";
-import "./CoreStorage.sol";
-import "./ICore.sol";
+import { EnumerableSet } from "../../lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import { CorePermissions } from "./CorePermissions.sol";
+import { CoreStorage } from "./CoreStorage.sol";
+import { ICore } from "./ICore.sol";
 
 /// @notice Core maintains global parameters, instances of protocol
 /// contracts, and access control across the Rift protocol
