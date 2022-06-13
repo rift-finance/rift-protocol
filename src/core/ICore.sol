@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.11;
 
-import "./ICorePermissions.sol";
+import { ICorePermissions } from "./ICorePermissions.sol";
 
 /// @notice Interface for Core
 /// @author Recursive Research Inc

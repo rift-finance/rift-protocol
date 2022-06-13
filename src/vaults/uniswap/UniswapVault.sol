@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "../../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import "../../../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import "../../../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+import { SafeERC20Upgradeable, IERC20Upgradeable } from "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import { IUniswapV2Router02 } from "../../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Factory } from "../../../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import { IUniswapV2Pair } from "../../../lib/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
-import "../Vault.sol";
-import "./UniswapVaultStorage.sol";
+import { Vault } from "../Vault.sol";
+import { UniswapVaultStorage } from "./UniswapVaultStorage.sol";
 
 /// @notice Contains the primary logic for Uniswap Vaults
 /// @author Recursive Research Inc

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import "./ICorePermissions.sol";
+import { IAccessControlUpgradeable, AccessControlUpgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import { ICorePermissions } from "./ICorePermissions.sol";
 
 /// @title Access control module for Core
 /// @author Recursive Research Inc

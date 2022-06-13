@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import "./ICore.sol";
+import { EnumerableSet } from "../../lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import { ICore } from "./ICore.sol";
 
 /// @notice Storage for Core
 /// @author Recursive Research Inc

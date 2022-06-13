@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 // Need to use IERC20Upgradeable because that is what SafeERC20Upgradeable requires
 // but the interface is exactly the same as ERC20s so this still works with ERC20s
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
+import { IERC20Upgradeable } from "../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/IERC20Upgradeable.sol";
 
 /// @notice Storage for Vault
 /// @author Recursive Research Inc

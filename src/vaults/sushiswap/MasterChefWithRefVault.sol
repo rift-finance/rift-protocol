@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.11;
 
-import "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import { SafeERC20Upgradeable, IERC20Upgradeable } from "../../../lib/openzeppelin-contracts-upgradeable/contracts/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import { IMasterChefWithRef } from "../../external/sushiswap/IMasterChef.sol";
-import "./MasterChefVault.sol";
+import { MasterChefVault } from "./MasterChefVault.sol";
 
 /// @notice Contains the staking logic for MasterChefWithRef Vaults
 /// @author Recursive Research Inc
