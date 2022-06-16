@@ -1,0 +1,17 @@
+name: run-tests
+on: [pull_request]
+env:
+  ALCHEMY_API_KEY: ${{secrets.alchemyApiKey}}
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - run: make bootstrap
+      - run: make build
+      - run: forge test -f "https://eth-mainnet.alchemyapi.io/v2/$ALCHEMY_API_KEY" --fork-block-number 13000000
+        
