@@ -72,9 +72,14 @@ abstract contract VaultStorageUnpadded {
     uint256 public token0FloorNum;
     /// @notice minimum return for TOKEN1 (out of `vault.DENOM`)
     uint256 public token1FloorNum;
+
+    /// @notice flag for enabling/disabling deposits
+    bool public depositsEnabled;
+
+    uint8[31] private __unused;
 }
 
 abstract contract VaultStorage is VaultStorageUnpadded {
     // @dev Padding 100 words of storage for upgradeability. Follows OZ's guidance.
-    uint256[100] private __gap;
+    uint256[99] private __gap;
 }

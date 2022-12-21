@@ -74,6 +74,44 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         assertEq(getToken0DepositRequests(), amount);
     }
 
+    function test_depositToken0DepositDisabled() public {
+        vm.prank(pauser);
+        vault.pause();
+        vm.prank(strategist);
+        vault.setDepositsEnabled(false);
+        vm.prank(pauser);
+        vault.unpause();
+        vm.stopPrank();
+        uint256 _amount = vault.MIN_LP();
+
+        getToken0(address(this), _amount);
+        if (vault.isNativeVault()) {
+            weth.withdraw(_amount);
+            vm.expectRevert("DEPOSITS_DISABLED");
+            vault.depositToken0{ value: _amount }(0);
+        } else {
+            token0.approve(address(vault), _amount);
+            vm.expectRevert("DEPOSITS_DISABLED");
+            vault.depositToken0(_amount);
+        }
+    }
+
+    function test_depositToken1DepositDisabled() public {
+        vm.prank(pauser);
+        vault.pause();
+        vm.prank(strategist);
+        vault.setDepositsEnabled(false);
+        vm.prank(pauser);
+        vault.unpause();
+        vm.stopPrank();
+        uint256 _amount = vault.MIN_LP();
+
+        getToken1(address(this), _amount);
+        token1.approve(address(vault), _amount);
+        vm.expectRevert("DEPOSITS_DISABLED");
+        vault.depositToken1(_amount);
+    }
+
     function test_depositToken1() public {
         depositToken1();
         assertEq(getToken1UserPendingDeposit(), amount);
@@ -269,6 +307,43 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
 
         assertEq(getToken0Reserves(), amount);
         assertEq(getToken0Active(), 0);
+    }
+
+    function test_advanceWithNoUserDepositedTokens() public {
+        depositToken0();
+        (uint256 reserves0, uint256 reserves1) = getPairReserves();
+
+        vm.startPrank(address(uint160(strategist) + 1));
+        vm.expectRevert("NOT_PARTICIPANT_OR_STRATEGIST");
+        vault.nextEpoch(reserves0, reserves1);
+    }
+
+    function test_advanceWithDepositedToken1() public {
+        vm.stopPrank();
+        address addr = address(uint160(strategist) + 1);
+        vm.startPrank(addr);
+        getToken1(addr, 1 ether);
+        token1.approve(address(vault), 1 ether);
+        vault.depositToken1(1 ether);
+
+        // with pending deposited token 1
+        (uint256 reserves0, uint256 reserves1) = getPairReserves();
+        vault.nextEpoch(reserves0, reserves1);
+
+        // with deposited token 1
+        (reserves0, reserves1) = getPairReserves();
+        vault.nextEpoch(reserves0, reserves1);
+
+        vault.withdrawToken1(vault.token1BalanceDay0(addr));
+
+        // with pending withdraw token 1
+        (reserves0, reserves1) = getPairReserves();
+        vault.nextEpoch(reserves0, reserves1);
+
+        // with no deposited token 1, expect fail
+        (reserves0, reserves1) = getPairReserves();
+        vm.expectRevert("NOT_PARTICIPANT_OR_STRATEGIST");
+        vault.nextEpoch(reserves0, reserves1);
     }
 
     function test_depositAdvanceFuzz(uint128 _amount0, uint128 _amount1) public {

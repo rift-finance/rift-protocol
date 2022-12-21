@@ -58,7 +58,7 @@ abstract contract CoreReference is Initializable {
     }
 
     modifier onlyStrategist() {
-        require(core.hasRole(core.STRATEGIST_ROLE(), msg.sender), "NOT_STRATEGIST");
+        require(_isStrategist(msg.sender), "NOT_STRATEGIST");
         _;
     }
 
@@ -76,5 +76,9 @@ abstract contract CoreReference is Initializable {
     function unpause() external onlyPauser whenPaused {
         _paused = false;
         emit Unpaused();
+    }
+
+    function _isStrategist(address _user) internal view returns (bool) {
+        return core.hasRole(core.STRATEGIST_ROLE(), _user);
     }
 }

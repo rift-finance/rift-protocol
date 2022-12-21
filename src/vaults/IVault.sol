@@ -109,4 +109,6 @@ interface IVault {
     function setToken1Floor(uint256 _token1FloorNum) external;
 
     function setEpochDuration(uint256 _epochDuration) external;
+
+    function setDepositsEnabled(bool _enabled) external;
 }
