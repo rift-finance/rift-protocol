@@ -87,8 +87,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vault.setDepositsDisabled();
         vm.prank(pauser);
         vault.unpause();
-        vm.stopPrank();
-
         getToken0(address(this), amount);
         if (vault.isNativeVault()) {
             weth.withdraw(amount);
@@ -314,7 +312,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
     }
 
     function test_advanceWithNoUserDepositedTokens() public {
-        depositToken0();
         (uint256 reserves0, uint256 reserves1) = getPairReserves();
 
         vm.startPrank(address(uint160(strategist) + 1));
@@ -323,7 +320,6 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
     }
 
     function test_advanceWithDepositedToken1() public {
-        vm.stopPrank();
         address addr = address(uint160(strategist) + 1);
         vm.startPrank(addr);
         getToken1(addr, amount);
