@@ -75,8 +75,6 @@ abstract contract VaultStorageUnpadded {
 
     /// @notice flag for enabling/disabling deposits
     bool public depositsEnabled;
-
-    uint8[31] private __unused;
 }
 
 abstract contract VaultStorage is VaultStorageUnpadded {

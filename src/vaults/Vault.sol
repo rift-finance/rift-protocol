@@ -72,7 +72,20 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         epochDuration = _epochDuration;
         token0FloorNum = _token0FloorNum;
         token1FloorNum = _token1FloorNum;
-        depositsEnabled = true;
+    }
+
+    modifier onlyParticipantOrStrategist(address _user) {
+        (uint256 depositedToken0, uint256 pendingToken0, ) = this.token0Balance(_user);
+        (uint256 depositedToken1, uint256 pendingToken1, ) = this.token1Balance(_user);
+        require(
+            depositedToken0 + pendingToken0 + depositedToken1 + pendingToken1 > 0 || _isStrategist(_user),
+            "NOT_PARTICIPANT_OR_STRATEGIST"
+        );
+        _;
+    }
+    modifier whenDepositsEnabled() {
+        require(depositsEnabled, "DEPOSITS_DISABLED");
+        _;
     }
 
     // ----------- Deposit Requests -----------
@@ -737,22 +750,12 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         }
     }
 
-    function setDepositsEnabled(bool _enabled) external onlyStrategist whenPaused {
-        depositsEnabled = _enabled;
+    function setDepositsEnabled() external onlyStrategist whenPaused {
+        depositsEnabled = true;
     }
 
-    modifier onlyParticipantOrStrategist(address _user) {
-        (uint256 depositedToken0, uint256 pendingToken0, ) = this.token0Balance(_user);
-        (uint256 depositedToken1, uint256 pendingToken1, ) = this.token1Balance(_user);
-        require(
-            depositedToken0 + pendingToken0 + depositedToken1 + pendingToken1 > 0 || _isStrategist(_user),
-            "NOT_PARTICIPANT_OR_STRATEGIST"
-        );
-        _;
-    }
-    modifier whenDepositsEnabled() {
-        require(depositsEnabled, "DEPOSITS_DISABLED");
-        _;
+    function setDepositsDisabled() external onlyStrategist whenPaused {
+        depositsEnabled = false;
     }
 
     // To receive any native token sent here (ex. from wrapped native withdraw)

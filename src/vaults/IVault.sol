@@ -110,5 +110,7 @@ interface IVault {
 
     function setEpochDuration(uint256 _epochDuration) external;
 
-    function setDepositsEnabled(bool _enabled) external;
+    function setDepositsEnabled() external;
+    
+    function setDepositsDisabled() external;
 }

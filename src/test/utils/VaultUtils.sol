@@ -34,6 +34,12 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         super.setUp();
         createTokensAndDexPair();
         vault = UniswapVault(payable(deployVault()));
+        vm.prank(pauser);
+        vault.pause();
+        vm.prank(strategist);
+        vault.setDepositsEnabled();
+        vm.prank(pauser);
+        vault.unpause();
     }
 
     /////////////////////////// VIRTUAL FUNCTIONS ///////////////////////////////
@@ -78,21 +84,20 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vm.prank(pauser);
         vault.pause();
         vm.prank(strategist);
-        vault.setDepositsEnabled(false);
+        vault.setDepositsDisabled();
         vm.prank(pauser);
         vault.unpause();
         vm.stopPrank();
-        uint256 _amount = vault.MIN_LP();
 
-        getToken0(address(this), _amount);
+        getToken0(address(this), amount);
         if (vault.isNativeVault()) {
-            weth.withdraw(_amount);
+            weth.withdraw(amount);
             vm.expectRevert("DEPOSITS_DISABLED");
-            vault.depositToken0{ value: _amount }(0);
+            vault.depositToken0{ value: amount }(0);
         } else {
-            token0.approve(address(vault), _amount);
+            token0.approve(address(vault), amount);
             vm.expectRevert("DEPOSITS_DISABLED");
-            vault.depositToken0(_amount);
+            vault.depositToken0(amount);
         }
     }
 
@@ -100,16 +105,15 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vm.prank(pauser);
         vault.pause();
         vm.prank(strategist);
-        vault.setDepositsEnabled(false);
+        vault.setDepositsDisabled();
         vm.prank(pauser);
         vault.unpause();
         vm.stopPrank();
-        uint256 _amount = vault.MIN_LP();
 
-        getToken1(address(this), _amount);
-        token1.approve(address(vault), _amount);
+        getToken1(address(this), amount);
+        token1.approve(address(vault), amount);
         vm.expectRevert("DEPOSITS_DISABLED");
-        vault.depositToken1(_amount);
+        vault.depositToken1(amount);
     }
 
     function test_depositToken1() public {
@@ -322,9 +326,9 @@ abstract contract BasicVaultTest is UniswapV2Fixture {
         vm.stopPrank();
         address addr = address(uint160(strategist) + 1);
         vm.startPrank(addr);
-        getToken1(addr, 1 ether);
-        token1.approve(address(vault), 1 ether);
-        vault.depositToken1(1 ether);
+        getToken1(addr, amount);
+        token1.approve(address(vault), amount);
+        vault.depositToken1(amount);
 
         // with pending deposited token 1
         (uint256 reserves0, uint256 reserves1) = getPairReserves();
