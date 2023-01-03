@@ -74,6 +74,20 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         token1FloorNum = _token1FloorNum;
     }
 
+    modifier onlyParticipantOrStrategist(address _user) {
+        (uint256 depositedToken0, uint256 pendingToken0, ) = this.token0Balance(_user);
+        (uint256 depositedToken1, uint256 pendingToken1, ) = this.token1Balance(_user);
+        require(
+            depositedToken0 + pendingToken0 + depositedToken1 + pendingToken1 > 0 || _isStrategist(_user),
+            "NOT_PARTICIPANT_OR_STRATEGIST"
+        );
+        _;
+    }
+    modifier whenDepositsEnabled() {
+        require(depositsEnabled, "DEPOSITS_DISABLED");
+        _;
+    }
+
     // ----------- Deposit Requests -----------
 
     /// @notice schedules a deposit of TOKEN0 into the floor tranche
@@ -82,7 +96,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     ///     and unused if it's a native vault. msg.value must be zero if not a native vault
     ///     typechain does not allow payable function overloading so we can either have 2 different
     ///     names or consolidate them into the same function as we do here
-    function depositToken0(uint256 _amount) external payable override whenNotPaused nonReentrant {
+    function depositToken0(uint256 _amount) external payable override whenDepositsEnabled whenNotPaused nonReentrant {
         if (isNativeVault) {
             IWrappy(address(token0)).deposit{ value: msg.value }();
             _depositAccounting(token0Data, msg.value, TOKEN0);
@@ -96,7 +110,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     /// @notice schedules a deposit of the TOKEN1 into the ceiling tranche
     /// @dev currently does not support fee on transfer / deflationary tokens.
     /// @param _amount the amount of the TOKEN1 to schedule-deposit
-    function depositToken1(uint256 _amount) external override whenNotPaused nonReentrant {
+    function depositToken1(uint256 _amount) external override whenDepositsEnabled whenNotPaused nonReentrant {
         token1.safeTransferFrom(msg.sender, address(this), _amount);
         _depositAccounting(token1Data, _amount, TOKEN1);
     }
@@ -386,7 +400,7 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     function nextEpoch(uint256 expectedPoolToken0, uint256 expectedPoolToken1)
         external
         override
-        onlyStrategist
+        onlyParticipantOrStrategist(msg.sender)
         whenNotPaused
     {
         require(block.timestamp - lastEpochStart >= epochDuration, "EPOCH_DURATION_UNMET");
@@ -734,6 +748,14 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         if (token1Fees > 0) {
             token1.safeTransfer(core.feeTo(), token1Fees);
         }
+    }
+
+    function setDepositsEnabled() external onlyStrategist whenPaused {
+        depositsEnabled = true;
+    }
+
+    function setDepositsDisabled() external onlyStrategist whenPaused {
+        depositsEnabled = false;
     }
 
     // To receive any native token sent here (ex. from wrapped native withdraw)
