@@ -58,9 +58,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
         uint256 _token0FloorNum,
         uint256 _token1FloorNum
     ) internal onlyInitializing {
-        require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
-        require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
-
         isNativeVault = _token0 == core.wrappedNative();
 
         token0 = IERC20Upgradeable(_token0);
@@ -721,7 +718,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     /// @notice sets a new value for the token0 floor
     /// @param _token0FloorNum the new floor token0 returns (out of `DENOM`)
     function setToken0Floor(uint256 _token0FloorNum) external override onlyStrategist {
-        require(_token0FloorNum > 0, "INVALID_TOKEN0_FLOOR");
         token0FloorNum = _token0FloorNum;
         emit Token0FloorUpdated(_token0FloorNum);
     }
@@ -729,7 +725,6 @@ abstract contract Vault is IVault, CoreReference, ReentrancyGuardUpgradeable, Va
     /// @notice sets a new value for the token1 floor
     /// @param _token1FloorNum the new floor token1 returns (out of `DENOM`)
     function setToken1Floor(uint256 _token1FloorNum) external override onlyStrategist {
-        require(_token1FloorNum > 0, "INVALID_TOKEN1_FLOOR");
         token1FloorNum = _token1FloorNum;
         emit Token1FloorUpdated(_token1FloorNum);
     }
